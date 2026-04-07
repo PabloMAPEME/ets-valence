@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>EU ETS maritime : compétitivité du port de Valence</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#1a2540;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:linear-gradient(90deg,#1F3864,#2E5E9E);padding:9px 18px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:2px solid #2E5E9E;flex-shrink:0;color:#fff}
+header h1{font-size:14px;font-weight:bold}
+header .sub{font-size:10px;color:#9bb5d8;margin-top:2px}
+header .badge{background:#1F3864;border:1px solid #4a7abf;padding:3px 10px;border-radius:10px;font-size:10px;color:#9bb5d8}
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+#map{flex:1}
+#toggle-btn{position:absolute;top:50%;right:0;transform:translateY(-50%);z-index:1000;
+  background:#1F3864;color:#fff;border:none;width:20px;height:52px;cursor:pointer;
+  border-radius:5px 0 0 5px;font-size:12px;display:flex;align-items:center;justify-content:center;
+  box-shadow:-2px 0 6px rgba(0,0,0,.3)}
+#toggle-btn:hover{background:#2E5E9E}
+.panel{width:380px;background:#eef2f7;border-left:2px solid #b8cce4;display:flex;
+  flex-direction:column;overflow-y:auto;flex-shrink:0;transition:width .3s,opacity .3s;color:#1a2840}
+.panel.collapsed{width:0;opacity:0;overflow:hidden;border-left:none}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-thumb{background:#b8cce4;border-radius:2px}
+.acc-sec{border-bottom:1px solid #c8d8ea}
+.acc-hdr{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;cursor:pointer;user-select:none}
+.acc-hdr:hover{filter:brightness(.95)}
+.acc-hdr span{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:bold}
+.acc-hdr .ch{font-size:10px;transition:transform .25s;opacity:.7}
+.acc-hdr.open .ch{transform:rotate(180deg)}
+.acc-body{padding:0 14px;overflow:hidden;transition:max-height .35s ease,padding .3s}
+.acc-body.closed{max-height:0;padding:0 14px}
+.acc-body.open{max-height:1400px;padding:10px 14px 12px}
+.hdr-ets{background:#d0e4f8;color:#1F3864}
+.hdr-petro{background:#fde8c8;color:#7a3a00}
+.hdr-routes{background:#d0f0da;color:#1a5c28}
+.hdr-conc{background:#fddad0;color:#7a2000}
+.hdr-leg{background:#e0d8f8;color:#3a1a7a}
+.price-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.price-label{font-size:11px;color:#4a6a8a}
+.price-val{font-size:22px;font-weight:bold;letter-spacing:-1px}
+.price-unit{font-size:10px;color:#6a8aaa;margin-left:2px}
+.val-eua{color:#1F3864}.val-oil{color:#8b4500}
+input[type=range]{width:100%;height:4px;appearance:none;border-radius:2px;outline:none;cursor:pointer}
+input[type=range].r-eua{background:linear-gradient(to right,#2E5E9E 0%,#2E5E9E var(--pct),#c8d8ea var(--pct),#c8d8ea 100%)}
+input[type=range].r-oil{background:linear-gradient(to right,#c87000 0%,#f5a623 var(--pct),#c8d8ea var(--pct),#c8d8ea 100%)}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border-radius:50%;
+  border:2px solid #fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+input[type=range].r-eua::-webkit-slider-thumb{background:#2E5E9E}
+input[type=range].r-oil::-webkit-slider-thumb{background:#e08020}
+.slider-marks{display:flex;justify-content:space-between;font-size:9px;color:#8aaac0;margin-top:3px}
+.scenarios{display:flex;gap:3px;margin-top:7px;flex-wrap:wrap}
+.sc-btn{padding:3px 7px;border-radius:9px;font-size:10px;cursor:pointer;
+  border:1px solid #9ab8d4;background:transparent;color:#3a5a7a;transition:all .2s}
+.sc-btn:hover,.sc-btn.active{background:#2E5E9E;color:#fff;border-color:#2E5E9E}
+select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
+  padding:6px 9px;border-radius:5px;font-size:11px;margin-top:7px;cursor:pointer;outline:none}
+.rc{background:#fff;border-radius:5px;padding:8px 10px;margin-bottom:6px;
+  border-left:3px solid #2E5E9E;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;transition:box-shadow .2s}
+.rc:hover{box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.rc.active-route{box-shadow:0 0 0 2px #2E5E9E}
+.rc.extra{border-left-color:#cc3300}
+.rc.diverted{border-left-color:#ff6600;background:#fff8f0}
+.rc.active-route.extra{box-shadow:0 0 0 2px #cc3300}
+.rc.active-route.diverted{box-shadow:0 0 0 2px #ff6600}
+.rc .rname{font-size:10px;color:#6a8aaa;margin-bottom:2px}
+.rc .rcost{font-size:18px;font-weight:bold;color:#1F3864}
+.rc .rpct{font-size:9px;color:#8aaac0;margin-top:1px}
+.rc .rbar{height:3px;border-radius:2px;margin-top:5px;background:#e8eef5;overflow:hidden}
+.rc .rbar-fill{height:100%;border-radius:2px;transition:width .4s,background .3s}
+.rc .rdetail{font-size:9px;color:#9ab8c8;margin-top:3px}
+.rc .rbunker{font-size:9px;color:#c0882a;margin-top:2px}
+.rc .rdivert{font-size:10px;font-weight:bold;color:#cc3300;margin-top:4px;padding:3px 6px;background:#ffe8e0;border-radius:4px}
+.cc{background:#fff;border:1px solid #f0c0a8;border-radius:5px;padding:9px 11px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.cc h4{font-size:11px;color:#c04000;margin-bottom:7px;font-weight:bold}
+.crow{display:flex;justify-content:space-between;font-size:10px;margin:3px 0;color:#6a7a80}
+.cval{font-weight:bold;color:#3a4a5a}
+.seuil{margin-top:7px;padding:6px 9px;border-radius:4px;text-align:center;font-size:10px;font-weight:bold}
+.seuil.safe{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.seuil.warn{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
+.seuil.danger{background:#fce4ec;color:#c62828;border:1px solid #ef9a9a}
+#divert-alert{display:none;background:#d84000;color:#fff;text-align:center;
+  padding:5px 12px;font-size:11px;font-weight:bold;flex-shrink:0}
+#divert-alert.active{display:block}
+.leg{display:flex;flex-wrap:wrap;gap:7px}
+.li{display:flex;align-items:center;gap:5px;font-size:10px;color:#3a5a7a}
+.ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ll{width:18px;height:2px;flex-shrink:0}
+.lbl{background:transparent!important;border:none!important;box-shadow:none!important;
+  font-family:Arial,sans-serif;font-size:11px;font-weight:bold;white-space:nowrap;padding:0!important}
+.lbl-main{color:#1F3864!important}.lbl-eu{color:#2255aa!important}.lbl-conc{color:#8b2000!important}
+@keyframes pulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.8);opacity:.4}100%{transform:scale(1);opacity:1}}
+.pulse-dot{animation:pulse 2s infinite}
+.src{font-size:9px;color:#8aaac0;padding:7px 14px;border-top:1px solid #c8d8ea;flex-shrink:0;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>EU ETS maritime : compétitivité du port de Valence</h1>
+    <div class="sub">Mémoire M1 APEME · Université de Nantes · Analyse de sensibilité au prix du carbone</div></div>
+  <div class="badge">IMO GHG Study 2020 · EEX 2024–2025 · Puertos del Estado · Searates 2026</div>
+</header>
+<div id="divert-alert">⚠ REROUTAGE ACTIF : le surcoût ETS dépasse le coût total du détour, les navires ont intérêt à éviter Valence</div>
+<div class="main">
+  <div id="map"></div>
+  <button id="toggle-btn" onclick="togglePanel()">◀</button>
+  <div class="panel" id="panel">
+    <div class="acc-sec">
+      <div class="acc-hdr hdr-ets open" onclick="toggleAcc(this)"><span>Paramètres EU ETS</span><span class="ch">▼</span></div>
+      <div class="acc-body open">
+        <div class="price-row"><span class="price-label">Prix EUA</span>
+          <span><span class="price-val val-eua" id="pdisp">65</span><span class="price-unit">€/tCO₂</span></span></div>
+        <input type="range" class="r-eua" id="pslider" min="40" max="300" value="65" step="5" style="--pct:9.6%">
+        <div class="slider-marks"><span>€40</span><span>Actuel ~€65</span><span>€150</span><span>€300</span></div>
+        <div class="scenarios" id="scbtns">
+          <button class="sc-btn" onclick="setPrice(40)">S1 €40</button>
+          <button class="sc-btn active" onclick="setPrice(65)">S2 €65</button>
+          <button class="sc-btn" onclick="setPrice(80)">S3 €80</button>
+          <button class="sc-btn" onclick="setPrice(100)">S4 €100</button>
+          <button class="sc-btn" onclick="setPrice(150)">S5 €150</button>
+        </div>
+        <select id="yrsel">
+          <option value="2024">2024 — Phase 40% · Intra: 40% / Extra: 20%</option>
+          <option value="2025" selected>2025 — Phase 70% · Intra: 70% / Extra: 35%</option>
+          <option value="2026">2026 — Phase 100% · Intra: 100% / Extra: 50%</option>
+        </select>
+      </div>
+    </div>
+    <div class="acc-sec">
+      <div class="acc-hdr hdr-petro" onclick="toggleAcc(this)"><span>Prix du combustible (bunker VLSFO)</span><span class="ch">▼</span></div>
+      <div class="acc-body closed">
+        <div class="price-row"><span class="price-label">Prix bunker</span>
+          <span><span class="price-val val-oil" id="odisp">500</span><span class="price-unit">€/tonne</span></span></div>
+        <input type="range" class="r-oil" id="oslider" min="300" max="700" value="500" step="10" style="--pct:50%">
+        <div class="slider-marks"><span>€300</span><span>~€500</span><span>€700</span></div>
+        <div style="font-size:9px;color:#a08050;margin-top:6px;line-height:1.6">
+          Un combustible moins cher réduit le coût du feeder vers Valence, ce qui abaisse le seuil de bascule.</div>
+      </div>
+    </div>
+    <div class="acc-sec">
+      <div class="acc-hdr hdr-routes open" onclick="toggleAcc(this)"><span>Surcoût EUA par TEU</span><span class="ch">▼</span></div>
+      <div class="acc-body open"><div id="rresults"></div></div>
+    </div>
+    <div class="acc-sec">
+      <div class="acc-hdr hdr-conc open" onclick="toggleAcc(this)"><span>Analyse du port concurrent</span><span class="ch">▼</span></div>
+      <div class="acc-body open"><div id="cresults"></div></div>
+    </div>
+    <div class="acc-sec">
+      <div class="acc-hdr hdr-leg" onclick="toggleAcc(this)"><span>Légende</span><span class="ch">▼</span></div>
+      <div class="acc-body closed">
+        <div class="leg">
+          <div class="li"><div class="ld" style="background:#FFD700;box-shadow:0 0 5px #FFD70088"></div>Port de Valence</div>
+          <div class="li"><div class="ld" style="background:#2255aa"></div>Port UE de référence</div>
+          <div class="li"><div class="ld" style="background:#cc3300"></div>Tanger Med (hub non-UE)</div>
+          <div class="li"><div class="ld" style="background:#667"></div>Port d'origine</div>
+          <div class="li"><div class="ll" style="background:#2255aa"></div>Route intra-UE</div>
+          <div class="li"><div class="ll" style="background:#cc3300"></div>Route extra-UE (via Cabo)</div>
+          <div class="li"><div class="ll" style="background:#ff8800"></div>Route reroutée (seuil dépassé)</div>
+          <div class="li"><div class="ll" style="background:#888;border-top:1px dashed #888"></div>Feeder Tanger Med → Valence</div>
+        </div>
+      </div>
+    </div>
+    <div class="src">Sources : IMO 4th GHG Study 2020 · EEX 2024–2025 · Puertos del Estado 2024 ·
+      Lagouvardou &amp; Psaraftis (2022) · Notteboom, Pallis &amp; Rodrigue (2022) ·
+      Searates.com (distances et frets, 2 avril 2026) · IHM 2018 (Ministerio de Defensa)</div>
+  </div>
+</div>
+<script>
+const ROUTES_DATA={"R1":[[39.430018,-0.309838],[39.591864,-0.064152],[39.7,0.1],[40.045307,0.617961],[40.16417,0.796254],[40.175086,0.81263],[40.324025,1.036038],[40.756134,1.684202],[40.837987,1.806981],[41.176068,2.314102],[41.197216,2.345825],[41.3,2.5],[41.868966,3.827586],[42.377158,5.013369],[42.37724,5.013561],[42.381348,5.023145],[42.455868,5.197026],[42.5291,5.367901],[42.554952,5.428222],[42.8,6],[43.439398,7.43475],[43.522,7.6201],[43.6,7.8],[43.903642,8.862165],[44.2821,8.9876]],"R2":[[39.430018,-0.309838],[38.995264,0.129546],[38.7897,0.3373],[38.480858,0.267518],[38.441352,0.258592],[38.2,0],[37.511837,-0.589854],[37.5,-0.6],[36.6,-2.1],[36.6,-2.508613],[36.6,-3.464998],[36.6,-3.559793],[36.6,-3.811553],[36.488703,-4.070282],[36.339533,-4.417056],[35.97289,-5.269383],[35.968819,-5.354867],[35.95,-5.75],[36.31906,-7.26966],[36.549727,-8.219465],[36.8,-9.25],[37.781589,-9.452092],[38.5,-9.6],[40.7798,-9.9844],[43,-9.5],[43.687223,-9.143299],[43.688493,-9.14264],[43.689329,-9.142206],[43.924891,-9.019938],[44.934776,-8.49576],[45.668797,-7.954994],[47.340067,-6.698867],[48.6667,-5.5],[48.799916,-5.06401],[49.042365,-4.270518],[49.115729,-4.030414],[49.129249,-3.986163],[49.370363,-3.197043],[49.616376,-2.39189],[49.738559,-1.992006],[49.75639,-1.93365],[49.838248,-1.665743],[49.895072,-1.47977],[49.95,-1.3],[49.743161,-0.75523],[49.742898,-0.754538],[49.604849,-0.390945],[49.4978,-0.109],[49.485898,0.082233]],"R3":[[30.732393,121.827393],[30.8345,122.6776],[30.181935,122.875214],[28.733947,122.211914],[27.8,121.3],[25.7,120],[25.085599,119.761963],[24.542126,118.937988],[23.765237,118.103027],[23,117],[21.7,114.1],[16.9609,112.0495],[16.951468,112.045638],[16.378371,111.810965],[12.2,110.1],[7.6091,107.3207],[1.341312,104.482294],[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]],"R4":[[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]],"R3_TM":[[30.732393,121.827393],[30.8345,122.6776],[30.181935,122.875214],[28.733947,122.211914],[27.8,121.3],[25.7,120],[25.085599,119.761963],[24.542126,118.937988],[23.765237,118.103027],[23,117],[21.7,114.1],[16.9609,112.0495],[16.951468,112.045638],[16.378371,111.810965],[12.2,110.1],[7.6091,107.3207],[1.341312,104.482294],[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.904932,-5.336225]],"R4_TM":[[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.904932,-5.336225]],"F_TM":[[35.904932,-5.336225],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]]};
+const DIST_KG=908.6,CAP=10000,LF=0.70,EF=3.114;
+const FRAC={'2024':{'Intra-UE':0.40,'Extra-UE':0.20},'2025':{'Intra-UE':0.70,'Extra-UE':0.35},'2026':{'Intra-UE':1.00,'Extra-UE':0.50}};
+const ROUTES=[
+  {id:'R1',name:'Valence ↔ Gênes',          dist:522,  type:'Intra-UE',fret:1379},
+  {id:'R2',name:'Valence ↔ Le Havre',        dist:1601, type:'Intra-UE',fret:3795},
+  {id:'R3',name:'Shanghai → Valence (Cabo)', dist:13149,type:'Extra-UE',fret:4480},
+  {id:'R4',name:'Singapour → Valence (Cabo)',dist:11078,type:'Extra-UE',fret:2939},
+];
+const CONCURRENTS=[
+  {id:'TM',name:'Tanger Med',flag:'🇲🇦',dist_f:392,trans:120,ll:[35.88,-5.50]},
+];
+function surcout(d,t,p,y){return DIST_KG*d/1000*p*FRAC[y][t]/(CAP*LF)}
+function bunkerCost(d,o){return (DIST_KG/1000/EF)*d*o/(CAP*LF)}
+function incit(rd,t,p,y,df,trans,oilP){
+  return DIST_KG*(rd-df)/1000*p*FRAC[y][t]/(CAP*LF)-trans-bunkerCost(df,oilP)}
+function seuil(rd,t,y,df,trans,oilP){
+  const fb=bunkerCost(df,oilP);
+  const d=DIST_KG*(rd-df)*FRAC[y][t]/(1000*CAP*LF);
+  return d>0?(trans+fb)/d:Infinity}
+function getActiveComp(r,p,y,o){
+  let best=null,bestInc=-Infinity;
+  CONCURRENTS.forEach(c=>{
+    if(r.dist<=c.dist_f)return;
+    const inc=incit(r.dist,r.type,p,y,c.dist_f,c.trans,o);
+    if(inc>0&&inc>bestInc){bestInc=inc;best=c;}
+  });
+  return best;}
+function costCol(c){
+  if(c<10)return '#2e7d32';if(c<25)return '#7cb342';
+  if(c<50)return '#f9a825';if(c<80)return '#e64a19';return '#b71c1c';}
+
+const map=L.map('map',{center:[20,30],zoom:3});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'© OpenStreetMap contributors © CARTO',maxZoom:14,subdomains:'abcd'}).addTo(map);
+
+const PDATA={
+  Valencia: {ll:[39.47,-0.33], type:'main',lbl:'PORT DE VALENCE'},
+  Genoa:    {ll:[44.41, 8.93], type:'eu',  lbl:'Gênes'},
+  LeHavre:  {ll:[49.49, 0.11], type:'eu',  lbl:'Le Havre'},
+  TangerMed:{ll:[35.88,-5.50], type:'conc',lbl:'Tanger Med'},
+  Shanghai: {ll:[31.22,121.47],type:'orig', lbl:'Shanghai'},
+  Singapore:{ll:[1.35,103.82], type:'orig', lbl:'Singapour'},
+};
+const PCOL={main:'#FFD700',eu:'#2255aa',conc:'#cc3300',orig:'#667788'};
+const PSZ={main:18,eu:11,conc:11,orig:8};
+Object.entries(PDATA).forEach(([k,p])=>{
+  const sz=PSZ[p.type],col=PCOL[p.type],pulse=k==='Valencia';
+  L.marker(p.ll,{icon:L.divIcon({className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],
+    html:`<div class="${pulse?'pulse-dot':''}" style="width:${sz}px;height:${sz}px;background:${col};
+      border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 ${pulse?14:5}px ${col}aa"></div>`})})
+    .addTo(map).bindTooltip(`<b>${p.lbl}</b>`,{direction:'top',offset:[0,-sz/2]});
+  if(p.type!=='orig'){
+    const dir=k==='Valencia'?'right':'top';
+    const cls=`lbl lbl-${p.type==='main'?'main':p.type==='eu'?'eu':'conc'}`;
+    L.tooltip({permanent:true,direction:dir,className:cls,offset:[0,-sz/2-2]})
+      .setContent(p.lbl).setLatLng(p.ll).addTo(map);
+  }
+});
+
+// Route lines + invisible thick click-target layer
+const rlines={}, rclick={};
+let selectedRoute=null;
+
+ROUTES.forEach(r=>{
+  const col=r.type==='Intra-UE'?'#2255aa':'#cc3300';
+  // Visible line
+  const pl=L.polyline(ROUTES_DATA[r.id],{color:col,weight:2.5,opacity:.8,dashArray:'8 5',interactive:false}).addTo(map);
+  // Invisible thick clickable layer on top
+  const cl=L.polyline(ROUTES_DATA[r.id],{color:'#000',weight:12,opacity:0,interactive:true}).addTo(map);
+  cl.bindTooltip(`<b>${r.name}</b><br>${r.dist.toLocaleString('fr')} nm · ${r.type}`,{sticky:true});
+  cl.on('click',e=>{L.DomEvent.stopPropagation(e);highlightRoute(r.id)});
+  cl.on('mouseover',()=>{if(selectedRoute!==r.id)pl.setStyle({weight:4,opacity:1})});
+  cl.on('mouseout',()=>{if(selectedRoute!==r.id)pl.setStyle({weight:2.5,opacity:.8})});
+  rlines[r.id]=pl; rclick[r.id]=cl;
+});
+
+map.on('click',()=>{
+  selectedRoute=null;
+  document.querySelectorAll('.rc').forEach(e=>e.classList.remove('active-route'));
+  render();
+});
+
+const fLines={
+  TM:L.polyline(ROUTES_DATA.F_TM,{color:'#667788',weight:2,opacity:0,dashArray:'6 5',interactive:false}).addTo(map),
+};
+
+function highlightRoute(rid){
+  selectedRoute=rid;
+  document.querySelectorAll('.rc').forEach(e=>e.classList.remove('active-route'));
+  const card=document.getElementById('card-'+rid);
+  if(card){card.classList.add('active-route');card.scrollIntoView({behavior:'smooth',block:'nearest'})}
+  Object.keys(rlines).forEach(id=>{
+    rlines[id].setStyle({opacity: id===rid ? 1 : 0.3});
+    if(id===rid)rlines[id].bringToFront();
+  });
+  rlines[rid].setStyle({weight:5});
+}
+
+let curPrice=65,curYear='2025',curOil=500,panelOpen=true;
+function toggleAcc(h){const b=h.nextElementSibling,o=h.classList.contains('open');
+  h.classList.toggle('open',!o);b.classList.toggle('open',!o);b.classList.toggle('closed',o)}
+function togglePanel(){panelOpen=!panelOpen;
+  document.getElementById('panel').classList.toggle('collapsed',!panelOpen);
+  document.getElementById('toggle-btn').textContent=panelOpen?'▶':'◀';
+  setTimeout(()=>map.invalidateSize(),320)}
+function setPrice(p){curPrice=p;document.getElementById('pslider').value=p;syncEua();render()}
+function syncEua(){
+  const v=curPrice,pct=((v-40)/260*100).toFixed(1)+'%';
+  document.getElementById('pslider').style.setProperty('--pct',pct);
+  document.getElementById('pdisp').textContent=v;
+  document.querySelectorAll('.sc-btn').forEach(b=>b.classList.remove('active'));
+  const m={40:0,65:1,80:2,100:3,150:4};
+  if(m[v]!==undefined)document.querySelectorAll('.sc-btn')[m[v]].classList.add('active')}
+function syncOil(){const pct=((curOil-300)/400*100).toFixed(1)+'%';
+  document.getElementById('oslider').style.setProperty('--pct',pct);
+  document.getElementById('odisp').textContent=curOil}
+
+function render(){
+  const p=curPrice,y=curYear,o=curOil;
+  let anyDivert=false;
+  const activeComps={R3:null,R4:null};
+  ROUTES.filter(r=>r.type==='Extra-UE').forEach(r=>{
+    activeComps[r.id]=getActiveComp(r,p,y,o);
+    if(activeComps[r.id])anyDivert=true;
+  });
+  document.getElementById('divert-alert').classList.toggle('active',anyDivert);
+  Object.values(fLines).forEach(l=>l.setStyle({opacity:0}));
+
+  let html='';
+  ROUTES.forEach(r=>{
+    const c=surcout(r.dist,r.type,p,y);
+    const bunk=bunkerCost(r.dist,o);
+    const pct=c/r.fret*100,pctB=bunk>0?c/bunk*100:0;
+    const col=costCol(c),barW=Math.min(pct*10,100).toFixed(0);
+    const ac=r.type==='Extra-UE'?activeComps[r.id]:null;
+    const isSelected=selectedRoute===r.id;
+
+    if(r.type==='Extra-UE'){
+      const dataKey=ac?`${r.id}_${ac.id}`:r.id;
+      const rd=ROUTES_DATA[dataKey]||ROUTES_DATA[r.id];
+      rlines[r.id].setLatLngs(rd);
+      rclick[r.id].setLatLngs(rd);
+      const baseCol=ac?'#ff8800':'#cc3300';
+      rlines[r.id].setStyle({color:baseCol,weight:isSelected?5:ac?3.5:2.5,
+        opacity:isSelected?1:ac?.9:.8,dashArray:ac?'10 4':'8 5'});
+      if(ac){fLines[ac.id].setStyle({opacity:.7,weight:2});fLines[ac.id].bringToFront()}
+    } else {
+      rlines[r.id].setStyle({color:costCol(c),
+        weight:isSelected?5:Math.min(2+c/20,5),opacity:isSelected?1:.8});
+    }
+
+    const incItm=ac?incit(r.dist,r.type,p,y,ac.dist_f,ac.trans,o):null;
+    html+=`<div class="rc ${r.type==='Extra-UE'?'extra':''} ${ac?'diverted':''} ${isSelected?'active-route':''}"
+      id="card-${r.id}" onclick="highlightRoute('${r.id}');event.stopPropagation()">
+      <div class="rname">${r.id} · ${r.name}</div>
+      <div class="rcost" style="color:${col}">€${c.toFixed(2)}<span style="font-size:11px;color:#8aaac0"> /TEU</span></div>
+      <div class="rpct">${pct.toFixed(2)}% du fret réf. (€${r.fret.toLocaleString('fr')}/TEU)</div>
+      <div class="rbar"><div class="rbar-fill" style="width:${barW}%;background:${col}"></div></div>
+      <div class="rbunker">Combustible : €${bunk.toFixed(0)}/TEU · ETS = ${pctB.toFixed(1)}% du combustible</div>
+      <div class="rdetail">${r.dist.toLocaleString('fr')} nm · ${r.type} · ETS: ${(FRAC[y][r.type]*100).toFixed(0)}%</div>
+      ${ac?`<div class="rdivert">⚠ Reroutage via ${ac.flag} ${ac.name} · incitation nette : +€${incItm.toFixed(1)}/TEU</div>`:''}
+    </div>`;
+  });
+  document.getElementById('rresults').innerHTML=html;
+
+  const extR=ROUTES.filter(r=>r.type==='Extra-UE');
+  let chtml='';
+  CONCURRENTS.forEach(cc=>{
+    const feederB=bunkerCost(cc.dist_f,o);
+    chtml+=`<div class="cc"><h4>${cc.flag} ${cc.name}
+      <span style="font-size:9px;color:#a08060;font-weight:normal"> · feeder ${cc.dist_f} nm · transbordt. €${cc.trans}/TEU · combustible feeder : €${feederB.toFixed(0)}/TEU</span></h4>`;
+    let anyDgr=false;
+    extR.forEach(r=>{
+      const inc=incit(r.dist,r.type,p,y,cc.dist_f,cc.trans,o);
+      const seu=seuil(r.dist,r.type,y,cc.dist_f,cc.trans,o);
+      if(inc>0)anyDgr=true;
+      chtml+=`<div class="crow"><span>${r.id} · Économie ETS brute</span><span class="cval">€${(inc+cc.trans+feederB).toFixed(1)}/TEU</span></div>
+        <div class="crow"><span>${r.id} · Coût total du détour</span><span class="cval">€${(cc.trans+feederB).toFixed(1)}/TEU</span></div>
+        <div class="crow"><span>${r.id} · Incitation nette</span>
+          <span style="font-weight:bold;color:${inc>0?'#c62828':'#2e7d32'}">${inc>0?'+':''}${inc.toFixed(1)} €/TEU</span></div>
+        <div class="crow"><span>${r.id} · Seuil de bascule</span>
+          <span style="font-weight:bold;color:#c87000">€${isFinite(seu)?seu.toFixed(0):'N/A'}/tCO₂</span></div>
+        <hr style="border-color:#f0d0c0;margin:5px 0">`;
+    });
+    const seuilMin=Math.min(...extR.map(r=>{const s=seuil(r.dist,r.type,y,cc.dist_f,cc.trans,o);return isFinite(s)?s:9999}));
+    let ind,cls;
+    if(anyDgr){ind=`⚠ REROUTAGE ACTIF · seuil dépassé à €${p}/tCO₂`;cls='danger';}
+    else if(seuilMin<=250){ind=`⚡ Seuil proche · bascule à €${seuilMin.toFixed(0)}/tCO₂`;cls='warn';}
+    else{ind=`✓ Seuil élevé · min. €${seuilMin.toFixed(0)}/tCO₂`;cls='safe';}
+    chtml+=`<div class="seuil ${cls}">${ind}</div></div>`;
+  });
+  document.getElementById('cresults').innerHTML=chtml;
+}
+
+document.getElementById('pslider').addEventListener('input',e=>{curPrice=parseInt(e.target.value);syncEua();render()});
+document.getElementById('oslider').addEventListener('input',e=>{curOil=parseInt(e.target.value);syncOil();render()});
+document.getElementById('yrsel').addEventListener('change',e=>{curYear=e.target.value;render()});
+syncEua();syncOil();render();
+</script>
+</body>
+</html>
