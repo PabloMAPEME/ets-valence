@@ -2,372 +2,1104 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>EU ETS maritime : compétitivité du port de Valence</title>
+<title>EU ETS maritime: port de Valence</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#1a2540;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ─── HEADER ──────────────────────────────────────────────────────────── */
 header{background:linear-gradient(90deg,#1F3864,#2E5E9E);padding:9px 18px;display:flex;align-items:center;
-  justify-content:space-between;border-bottom:2px solid #2E5E9E;flex-shrink:0;color:#fff}
+  justify-content:space-between;border-bottom:2px solid #2E5E9E;flex-shrink:0;color:#fff;position:relative}
 header h1{font-size:14px;font-weight:bold}
 header .sub{font-size:10px;color:#9bb5d8;margin-top:2px}
+header .right-zone{display:flex;align-items:center;gap:10px}
 header .badge{background:#1F3864;border:1px solid #4a7abf;padding:3px 10px;border-radius:10px;font-size:10px;color:#9bb5d8}
+
+/* Language button */
+.lang-wrap{position:relative}
+.lang-btn{background:#1F3864;border:1px solid #4a7abf;color:#9bb5d8;font-size:11px;
+  padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Arial,sans-serif;display:flex;align-items:center;gap:4px}
+.lang-btn:hover{background:#2E5E9E;color:#fff}
+.lang-btn .arrow{font-size:8px;opacity:.7}
+.lang-popover{display:none;position:absolute;top:100%;right:0;margin-top:6px;
+  background:#fff;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);
+  padding:14px 16px;width:280px;z-index:2000;color:#1a2840}
+.lang-popover.show{display:block}
+.lang-popover .lang-item{font-size:11px;line-height:1.5;color:#3a4a5a;padding:6px 0;border-bottom:1px solid #e8eef5}
+.lang-popover .lang-item:last-child{border-bottom:none}
+.lang-popover .lang-flag{font-weight:bold;color:#1F3864;font-size:11px;margin-bottom:2px}
+
+/* ─── TABS ────────────────────────────────────────────────────────────── */
+.tabs{background:#0f1f3d;display:flex;flex-shrink:0;border-bottom:1px solid #2E5E9E}
+.tab{padding:9px 22px;cursor:pointer;font-size:12px;color:#9bb5d8;background:transparent;
+  border:none;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:.5px;
+  transition:all .2s;border-bottom:3px solid transparent;text-transform:uppercase}
+.tab:hover{color:#fff;background:#1a2c50}
+.tab.active{color:#fff;background:#1F3864;border-bottom-color:#FFD700}
+.tab .tab-icon{margin-right:6px}
+
+/* ─── MAIN ─────────────────────────────────────────────────────────────── */
 .main{display:flex;flex:1;overflow:hidden;position:relative}
+.tab-content{display:none;flex:1;overflow:hidden;position:relative}
+.tab-content.active{display:flex}
+
+/* ─── MAP TAB (existing) ──────────────────────────────────────────────── */
 #map{flex:1}
-#toggle-btn{position:absolute;top:50%;right:0;transform:translateY(-50%);z-index:1000;
+#tbtn{position:absolute;top:50%;right:0;transform:translateY(-50%);z-index:1000;
   background:#1F3864;color:#fff;border:none;width:20px;height:52px;cursor:pointer;
-  border-radius:5px 0 0 5px;font-size:12px;display:flex;align-items:center;justify-content:center;
-  box-shadow:-2px 0 6px rgba(0,0,0,.3)}
-#toggle-btn:hover{background:#2E5E9E}
+  border-radius:5px 0 0 5px;font-size:14px}
+#tbtn:hover{background:#2E5E9E}
 .panel{width:380px;background:#eef2f7;border-left:2px solid #b8cce4;display:flex;
   flex-direction:column;overflow-y:auto;flex-shrink:0;transition:width .3s,opacity .3s;color:#1a2840}
 .panel.collapsed{width:0;opacity:0;overflow:hidden;border-left:none}
 .panel::-webkit-scrollbar{width:4px}
 .panel::-webkit-scrollbar-thumb{background:#b8cce4;border-radius:2px}
-.acc-sec{border-bottom:1px solid #c8d8ea}
-.acc-hdr{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;cursor:pointer;user-select:none}
-.acc-hdr:hover{filter:brightness(.95)}
-.acc-hdr span{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:bold}
-.acc-hdr .ch{font-size:10px;transition:transform .25s;opacity:.7}
-.acc-hdr.open .ch{transform:rotate(180deg)}
-.acc-body{padding:0 14px;overflow:hidden;transition:max-height .35s ease,padding .3s}
-.acc-body.closed{max-height:0;padding:0 14px}
-.acc-body.open{max-height:1400px;padding:10px 14px 12px}
-.hdr-ets{background:#d0e4f8;color:#1F3864}
-.hdr-petro{background:#fde8c8;color:#7a3a00}
-.hdr-routes{background:#d0f0da;color:#1a5c28}
-.hdr-conc{background:#fddad0;color:#7a2000}
-.hdr-leg{background:#e0d8f8;color:#3a1a7a}
-.price-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
-.price-label{font-size:11px;color:#4a6a8a}
-.price-val{font-size:22px;font-weight:bold;letter-spacing:-1px}
-.price-unit{font-size:10px;color:#6a8aaa;margin-left:2px}
-.val-eua{color:#1F3864}.val-oil{color:#8b4500}
+.asec{border-bottom:1px solid #c8d8ea}
+.ahdr{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;cursor:pointer;user-select:none}
+.ahdr:hover{filter:brightness(.95)}
+.ahdr span{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:bold}
+.ahdr .ch{font-size:10px;transition:transform .25s;opacity:.7}
+.ahdr.open .ch{transform:rotate(180deg)}
+.abody{padding:0 14px;overflow:hidden;transition:max-height .35s ease,padding .3s}
+.abody.closed{max-height:0;padding:0 14px}
+.abody.open{max-height:2000px;padding:10px 14px 12px}
+.h-ets{background:#d0e4f8;color:#1F3864}
+.h-oil{background:#fde8c8;color:#7a3a00}
+.h-rt{background:#d0f0da;color:#1a5c28}
+.h-tm{background:#fddad0;color:#7a2000}
+.h-bcn{background:#fff3cd;color:#7a5000}
+.h-leg{background:#e0d8f8;color:#3a1a7a}
+.prow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.plbl{font-size:11px;color:#4a6a8a}
+.pval{font-size:22px;font-weight:bold;letter-spacing:-1px}
+.punit{font-size:10px;color:#6a8aaa;margin-left:2px}
+.veua{color:#1F3864}.voil{color:#8b4500}
 input[type=range]{width:100%;height:4px;appearance:none;border-radius:2px;outline:none;cursor:pointer}
-input[type=range].r-eua{background:linear-gradient(to right,#2E5E9E 0%,#2E5E9E var(--pct),#c8d8ea var(--pct),#c8d8ea 100%)}
-input[type=range].r-oil{background:linear-gradient(to right,#c87000 0%,#f5a623 var(--pct),#c8d8ea var(--pct),#c8d8ea 100%)}
-input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border-radius:50%;
-  border:2px solid #fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-input[type=range].r-eua::-webkit-slider-thumb{background:#2E5E9E}
-input[type=range].r-oil::-webkit-slider-thumb{background:#e08020}
-.slider-marks{display:flex;justify-content:space-between;font-size:9px;color:#8aaac0;margin-top:3px}
-.scenarios{display:flex;gap:3px;margin-top:7px;flex-wrap:wrap}
-.sc-btn{padding:3px 7px;border-radius:9px;font-size:10px;cursor:pointer;
+.reua{background:linear-gradient(to right,#2E5E9E 0%,#2E5E9E var(--pct),#c8d8ea var(--pct),#c8d8ea 100%)}
+.roil{background:linear-gradient(to right,#c87000 0%,#f5a623 var(--pct),#c8d8ea var(--pct),#c8d8ea 100%)}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid #fff;cursor:pointer}
+.reua::-webkit-slider-thumb{background:#2E5E9E}
+.roil::-webkit-slider-thumb{background:#e08020}
+.smarks{display:flex;justify-content:space-between;font-size:9px;color:#8aaac0;margin-top:3px}
+.scns{display:flex;gap:3px;margin-top:7px;flex-wrap:wrap}
+.sb{padding:3px 7px;border-radius:9px;font-size:10px;cursor:pointer;
   border:1px solid #9ab8d4;background:transparent;color:#3a5a7a;transition:all .2s}
-.sc-btn:hover,.sc-btn.active{background:#2E5E9E;color:#fff;border-color:#2E5E9E}
+.sb:hover,.sb.active{background:#2E5E9E;color:#fff;border-color:#2E5E9E}
 select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
   padding:6px 9px;border-radius:5px;font-size:11px;margin-top:7px;cursor:pointer;outline:none}
 .rc{background:#fff;border-radius:5px;padding:8px 10px;margin-bottom:6px;
-  border-left:3px solid #2E5E9E;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;transition:box-shadow .2s}
+  border-left:3px solid #2E5E9E;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}
 .rc:hover{box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.rc.active-route{box-shadow:0 0 0 2px #2E5E9E}
-.rc.extra{border-left-color:#cc3300}
-.rc.diverted{border-left-color:#ff6600;background:#fff8f0}
-.rc.active-route.extra{box-shadow:0 0 0 2px #cc3300}
-.rc.active-route.diverted{box-shadow:0 0 0 2px #ff6600}
-.rc .rname{font-size:10px;color:#6a8aaa;margin-bottom:2px}
-.rc .rcost{font-size:18px;font-weight:bold;color:#1F3864}
-.rc .rpct{font-size:9px;color:#8aaac0;margin-top:1px}
-.rc .rbar{height:3px;border-radius:2px;margin-top:5px;background:#e8eef5;overflow:hidden}
-.rc .rbar-fill{height:100%;border-radius:2px;transition:width .4s,background .3s}
-.rc .rdetail{font-size:9px;color:#9ab8c8;margin-top:3px}
-.rc .rbunker{font-size:9px;color:#c0882a;margin-top:2px}
-.rc .rdivert{font-size:10px;font-weight:bold;color:#cc3300;margin-top:4px;padding:3px 6px;background:#ffe8e0;border-radius:4px}
-.cc{background:#fff;border:1px solid #f0c0a8;border-radius:5px;padding:9px 11px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.rc.sel{box-shadow:0 0 0 2px #2E5E9E}
+.rc.ex{border-left-color:#cc3300}
+.rc.dv{border-left-color:#ff6600;background:#fff8f0}
+.rc.sel.ex{box-shadow:0 0 0 2px #cc3300}
+.rn{font-size:10px;color:#6a8aaa;margin-bottom:2px}
+.rv{font-size:18px;font-weight:bold}
+.rp{font-size:9px;color:#8aaac0;margin-top:1px}
+.rb{height:3px;border-radius:2px;margin-top:5px;background:#e8eef5;overflow:hidden}
+.rbf{height:100%;border-radius:2px;transition:width .4s}
+.rd{font-size:9px;color:#9ab8c8;margin-top:3px}
+.rdv{font-size:10px;font-weight:bold;color:#cc3300;margin-top:4px;padding:3px 6px;background:#ffe8e0;border-radius:4px}
+.cc{background:#fff;border:1px solid #f0c0a8;border-radius:5px;padding:9px 11px;margin-bottom:6px}
 .cc h4{font-size:11px;color:#c04000;margin-bottom:7px;font-weight:bold}
 .crow{display:flex;justify-content:space-between;font-size:10px;margin:3px 0;color:#6a7a80}
-.cval{font-weight:bold;color:#3a4a5a}
 .seuil{margin-top:7px;padding:6px 9px;border-radius:4px;text-align:center;font-size:10px;font-weight:bold}
-.seuil.safe{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
-.seuil.warn{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
-.seuil.danger{background:#fce4ec;color:#c62828;border:1px solid #ef9a9a}
-#divert-alert{display:none;background:#d84000;color:#fff;text-align:center;
-  padding:5px 12px;font-size:11px;font-weight:bold;flex-shrink:0}
-#divert-alert.active{display:block}
+.safe{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.warn{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
+.danger{background:#fce4ec;color:#c62828;border:1px solid #ef9a9a}
+.bc{background:#fff;border:1px solid #ffe082;border-radius:5px;padding:9px 11px;margin-bottom:6px}
+.bc h4{font-size:11px;color:#7a5000;margin-bottom:7px;font-weight:bold}
+#da{display:none;background:#d84000;color:#fff;text-align:center;padding:5px 12px;font-size:11px;font-weight:bold;flex-shrink:0}
+#da.on{display:block}
 .leg{display:flex;flex-wrap:wrap;gap:7px}
 .li{display:flex;align-items:center;gap:5px;font-size:10px;color:#3a5a7a}
 .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .ll{width:18px;height:2px;flex-shrink:0}
 .lbl{background:transparent!important;border:none!important;box-shadow:none!important;
   font-family:Arial,sans-serif;font-size:11px;font-weight:bold;white-space:nowrap;padding:0!important}
-.lbl-main{color:#1F3864!important}.lbl-eu{color:#2255aa!important}.lbl-conc{color:#8b2000!important}
+.lbl-main{color:#1F3864!important}.lbl-eu{color:#2255aa!important}
+.lbl-conc{color:#8b2000!important}.lbl-bcn{color:#b87000!important}
 @keyframes pulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.8);opacity:.4}100%{transform:scale(1);opacity:1}}
-.pulse-dot{animation:pulse 2s infinite}
+.pd{animation:pulse 2s infinite}
 .src{font-size:9px;color:#8aaac0;padding:7px 14px;border-top:1px solid #c8d8ea;flex-shrink:0;line-height:1.5}
+
+/* ─── CALCULATEUR TAB ─────────────────────────────────────────────────── */
+.calc-wrap{flex:1;overflow-y:auto;background:#f5f7fa;padding:24px 32px}
+.calc-wrap::-webkit-scrollbar{width:8px}
+.calc-wrap::-webkit-scrollbar-thumb{background:#b8cce4;border-radius:4px}
+.calc-container{max-width:1100px;margin:0 auto}
+.calc-intro{background:linear-gradient(135deg,#1F3864 0%,#2E5E9E 100%);color:#fff;
+  padding:20px 26px;border-radius:8px;margin-bottom:20px}
+.calc-intro h2{font-size:18px;margin-bottom:6px}
+.calc-intro p{font-size:12px;color:#cfdcef;line-height:1.5}
+
+.calc-grid{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media (max-width:900px){.calc-grid{grid-template-columns:1fr}}
+
+.calc-inputs{background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.calc-results{background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+  color:#1F3864;font-weight:bold;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #FFD700}
+
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:11px;color:#4a6a8a;margin-bottom:5px;font-weight:600}
+.input-group .help{font-size:9px;color:#8aaac0;margin-top:3px;font-style:italic}
+.input-row{display:flex;align-items:center;gap:8px}
+.input-row input[type=number]{flex:1;padding:7px 10px;border:1px solid #c8d8ea;border-radius:5px;
+  font-size:13px;color:#1F3864;font-weight:bold;font-family:Arial,sans-serif;outline:none;
+  transition:border-color .2s}
+.input-row input[type=number]:focus{border-color:#2E5E9E}
+.input-row input:disabled{background:#f5f7fa;color:#7a8a9a;cursor:not-allowed;font-style:italic}
+.input-row input[type=text]:disabled{background:#f5f7fa;color:#7a8a9a;cursor:not-allowed;font-style:italic;font-weight:bold;padding:7px 10px;border:1px solid #c8d8ea;border-radius:5px;font-size:13px;flex:1;font-family:Arial,sans-serif}
+.input-row .unit{font-size:11px;color:#8aaac0;min-width:55px}
+.input-row select{flex:1;padding:7px 10px;border:1px solid #c8d8ea;border-radius:5px;
+  font-size:12px;color:#1F3864;font-weight:bold;cursor:pointer;outline:none;background:#fff;margin-top:0}
+
+.advanced-toggle{display:flex;align-items:center;justify-content:space-between;
+  background:#f0f4fa;padding:10px 14px;border-radius:6px;cursor:pointer;
+  margin-top:8px;margin-bottom:14px;border:1px dashed #b8cce4;user-select:none}
+.advanced-toggle:hover{background:#e8eef5}
+.advanced-toggle .at-label{font-size:11px;color:#4a6a8a;font-weight:bold;text-transform:uppercase;letter-spacing:1px}
+.advanced-toggle .at-arrow{font-size:11px;color:#1F3864;transition:transform .25s}
+.advanced-toggle.open .at-arrow{transform:rotate(180deg)}
+.advanced-section{display:none;animation:fadeIn .3s}
+.advanced-section.open{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.preset-btns{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.preset-btn{padding:4px 9px;border-radius:12px;font-size:10px;cursor:pointer;
+  border:1px solid #c8d8ea;background:#fff;color:#3a5a7a;transition:all .2s;font-family:Arial,sans-serif}
+.preset-btn:hover,.preset-btn.active{background:#1F3864;color:#fff;border-color:#1F3864}
+
+/* Results */
+.result-card{background:#f9fbfd;border-left:4px solid #1F3864;padding:14px 18px;
+  border-radius:6px;margin-bottom:12px}
+.result-card.highlight{background:linear-gradient(135deg,#FFF9E6 0%,#FFFCF2 100%);border-left-color:#FFD700}
+.result-card.danger{background:#fce4ec;border-left-color:#c62828}
+.result-card.warn{background:#fff8e1;border-left-color:#f57f17}
+.result-card.safe{background:#e8f5e9;border-left-color:#2e7d32}
+.result-label{font-size:10px;color:#7a8a9a;text-transform:uppercase;letter-spacing:1px;font-weight:bold;margin-bottom:4px}
+.result-value{font-size:24px;color:#1F3864;font-weight:bold;letter-spacing:-1px}
+.result-value.medium{font-size:18px}
+.result-unit{font-size:11px;color:#8aaac0;margin-left:4px;font-weight:normal}
+.result-detail{font-size:10px;color:#6a8aaa;margin-top:5px;line-height:1.4}
+
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+
+.formula-box{background:#0f1f3d;color:#9bb5d8;padding:14px 18px;border-radius:6px;
+  font-family:'Courier New',monospace;font-size:11px;line-height:1.6;margin-bottom:14px}
+.formula-box strong{color:#FFD700}
+
+.semaphore{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:6px;
+  font-size:13px;font-weight:bold;margin-bottom:14px}
+.semaphore .icon{font-size:20px}
+.semaphore.green{background:#e8f5e9;color:#2e7d32}
+.semaphore.yellow{background:#fff8e1;color:#f57f17}
+.semaphore.red{background:#fce4ec;color:#c62828}
+
+.note-bottom{font-size:10px;color:#8aaac0;text-align:center;padding:14px;
+  border-top:1px solid #e8eef5;margin-top:8px;line-height:1.5}
+
 </style>
 </head>
 <body>
+
 <header>
-  <div><h1>EU ETS maritime : compétitivité du port de Valence</h1>
-    <div class="sub">Mémoire M1 APEME · Université de Nantes · Analyse de sensibilité au prix du carbone</div></div>
-  <div class="badge">IMO GHG Study 2020 · EEX 2024–2025 · Puertos del Estado · Searates 2026</div>
-</header>
-<div id="divert-alert">⚠ REROUTAGE ACTIF : le surcoût ETS dépasse le coût total du détour, les navires ont intérêt à éviter Valence</div>
-<div class="main">
-  <div id="map"></div>
-  <button id="toggle-btn" onclick="togglePanel()">◀</button>
-  <div class="panel" id="panel">
-    <div class="acc-sec">
-      <div class="acc-hdr hdr-ets open" onclick="toggleAcc(this)"><span>Paramètres EU ETS</span><span class="ch">▼</span></div>
-      <div class="acc-body open">
-        <div class="price-row"><span class="price-label">Prix EUA</span>
-          <span><span class="price-val val-eua" id="pdisp">65</span><span class="price-unit">€/tCO₂</span></span></div>
-        <input type="range" class="r-eua" id="pslider" min="40" max="300" value="65" step="5" style="--pct:9.6%">
-        <div class="slider-marks"><span>€40</span><span>Actuel ~€65</span><span>€150</span><span>€300</span></div>
-        <div class="scenarios" id="scbtns">
-          <button class="sc-btn" onclick="setPrice(40)">S1 €40</button>
-          <button class="sc-btn active" onclick="setPrice(65)">S2 €65</button>
-          <button class="sc-btn" onclick="setPrice(80)">S3 €80</button>
-          <button class="sc-btn" onclick="setPrice(100)">S4 €100</button>
-          <button class="sc-btn" onclick="setPrice(150)">S5 €150</button>
-        </div>
-        <select id="yrsel">
-          <option value="2024">2024 — Phase 40% · Intra: 40% / Extra: 20%</option>
-          <option value="2025" selected>2025 — Phase 70% · Intra: 70% / Extra: 35%</option>
-          <option value="2026">2026 — Phase 100% · Intra: 100% / Extra: 50%</option>
-        </select>
-      </div>
-    </div>
-    <div class="acc-sec">
-      <div class="acc-hdr hdr-petro" onclick="toggleAcc(this)"><span>Prix du combustible (bunker VLSFO)</span><span class="ch">▼</span></div>
-      <div class="acc-body closed">
-        <div class="price-row"><span class="price-label">Prix bunker</span>
-          <span><span class="price-val val-oil" id="odisp">500</span><span class="price-unit">€/tonne</span></span></div>
-        <input type="range" class="r-oil" id="oslider" min="300" max="700" value="500" step="10" style="--pct:50%">
-        <div class="slider-marks"><span>€300</span><span>~€500</span><span>€700</span></div>
-        <div style="font-size:9px;color:#a08050;margin-top:6px;line-height:1.6">
-          Un combustible moins cher réduit le coût du feeder vers Valence, ce qui abaisse le seuil de bascule.</div>
-      </div>
-    </div>
-    <div class="acc-sec">
-      <div class="acc-hdr hdr-routes open" onclick="toggleAcc(this)"><span>Surcoût EUA par TEU</span><span class="ch">▼</span></div>
-      <div class="acc-body open"><div id="rresults"></div></div>
-    </div>
-    <div class="acc-sec">
-      <div class="acc-hdr hdr-conc open" onclick="toggleAcc(this)"><span>Analyse du port concurrent</span><span class="ch">▼</span></div>
-      <div class="acc-body open"><div id="cresults"></div></div>
-    </div>
-    <div class="acc-sec">
-      <div class="acc-hdr hdr-leg" onclick="toggleAcc(this)"><span>Légende</span><span class="ch">▼</span></div>
-      <div class="acc-body closed">
-        <div class="leg">
-          <div class="li"><div class="ld" style="background:#FFD700;box-shadow:0 0 5px #FFD70088"></div>Port de Valence</div>
-          <div class="li"><div class="ld" style="background:#2255aa"></div>Port UE de référence</div>
-          <div class="li"><div class="ld" style="background:#cc3300"></div>Tanger Med (hub non-UE)</div>
-          <div class="li"><div class="ld" style="background:#667"></div>Port d'origine</div>
-          <div class="li"><div class="ll" style="background:#2255aa"></div>Route intra-UE</div>
-          <div class="li"><div class="ll" style="background:#cc3300"></div>Route extra-UE (via Cabo)</div>
-          <div class="li"><div class="ll" style="background:#ff8800"></div>Route reroutée (seuil dépassé)</div>
-          <div class="li"><div class="ll" style="background:#888;border-top:1px dashed #888"></div>Feeder Tanger Med → Valence</div>
-        </div>
-      </div>
-    </div>
-    <div class="src">Sources : IMO 4th GHG Study 2020 · EEX 2024–2025 · Puertos del Estado 2024 ·
-      Lagouvardou &amp; Psaraftis (2022) · Notteboom, Pallis &amp; Rodrigue (2022) ·
-      Searates.com (distances et frets, 2 avril 2026) · IHM 2018 (Ministerio de Defensa)</div>
+  <div>
+    <h1>EU ETS maritime: comp&eacute;titivit&eacute; du port de Valence</h1>
+    <div class="sub">M&eacute;moire M1 APEME &middot; Universit&eacute; de Nantes &middot; Analyse de sensibilit&eacute; au prix du carbone</div>
   </div>
+  <div class="right-zone">
+    <div class="lang-wrap">
+      <button class="lang-btn" onclick="tglLang(event)">
+        <span>FR</span><span class="arrow">&#9662;</span>
+      </button>
+      <div class="lang-popover" id="lang-pop">
+        <div class="lang-item">
+          <div class="lang-flag">FR</div>
+          Cet outil est uniquement disponible en fran&ccedil;ais. Pour utiliser le calculateur en espagnol ou en valencien, &eacute;crivez &agrave; l'auteur pour recevoir le fichier Excel multilingue.
+        </div>
+        <div class="lang-item">
+          <div class="lang-flag">ES</div>
+          Esta herramienta s&oacute;lo est&aacute; disponible en franc&eacute;s. Para usar la calculadora en espa&ntilde;ol o valenciano, escriba al autor para recibir el archivo Excel multiling&uuml;e.
+        </div>
+        <div class="lang-item">
+          <div class="lang-flag">CA</div>
+          Aquesta eina nom&eacute;s est&agrave; disponible en franc&egrave;s. Per a utilitzar la calculadora en espanyol o valenci&agrave;, escriviu a l'autor per a rebre el fitxer Excel multiling&uuml;e.
+        </div>
+      </div>
+    </div>
+    <div class="badge">IMO GHG Study 2020 &middot; EEX 2024&ndash;2025 &middot; Puertos del Estado &middot; Searates 2026</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('map')"><span class="tab-icon">&#127757;</span>Carte interactive</button>
+  <button class="tab" onclick="switchTab('calc')"><span class="tab-icon">&#9881;</span>Calculateur</button>
 </div>
+
+<div id="da">&#9888; REROUTAGE ACTIF : le surc&ucirc;t ETS d&eacute;passe le co&ucirc;t total du d&eacute;tour</div>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       TAB 1 : CARTE INTERACTIVE
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="tab-content active" id="tab-map">
+    <div id="map"></div>
+    <button id="tbtn" onclick="tglPanel()">&#9664;</button>
+    <div class="panel" id="panel">
+
+      <div class="asec">
+        <div class="ahdr h-ets open" onclick="tglAcc(this)"><span>Param&egrave;tres EU ETS</span><span class="ch">&#9660;</span></div>
+        <div class="abody open">
+          <div class="prow"><span class="plbl">Prix EUA</span>
+            <span><span class="pval veua" id="pd">65</span><span class="punit">&euro;/tCO&sup2;</span></span></div>
+          <input type="range" class="reua" id="ps" min="40" max="300" value="65" step="5" style="--pct:9.6%">
+          <div class="smarks"><span>&euro;40</span><span>Actuel ~&euro;65</span><span>&euro;150</span><span>&euro;300</span></div>
+          <div class="scns">
+            <button class="sb" onclick="setP(40)">S1 &euro;40</button>
+            <button class="sb active" onclick="setP(65)">S2 &euro;65</button>
+            <button class="sb" onclick="setP(80)">S3 &euro;80</button>
+            <button class="sb" onclick="setP(100)">S4 &euro;100</button>
+            <button class="sb" onclick="setP(150)">S5 &euro;150</button>
+          </div>
+          <select id="ys">
+            <option value="2024">2024 &mdash; Phase 40% &middot; Intra: 40% / Extra: 20%</option>
+            <option value="2025" selected>2025 &mdash; Phase 70% &middot; Intra: 70% / Extra: 35%</option>
+            <option value="2026">2026 &mdash; Phase 100% &middot; Intra: 100% / Extra: 50%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="asec">
+        <div class="ahdr h-oil" onclick="tglAcc(this)"><span>Prix du combustible (VLSFO)</span><span class="ch">&#9660;</span></div>
+        <div class="abody closed">
+          <div class="prow"><span class="plbl">Prix bunker</span>
+            <span><span class="pval voil" id="od">500</span><span class="punit">&euro;/tonne</span></span></div>
+          <input type="range" class="roil" id="os" min="300" max="700" value="500" step="10" style="--pct:50%">
+          <div class="smarks"><span>&euro;300</span><span>~&euro;500</span><span>&euro;700</span></div>
+        </div>
+      </div>
+
+      <div class="asec">
+        <div class="ahdr h-rt open" onclick="tglAcc(this)"><span>Surc&ucirc;t EUA par TEU</span><span class="ch">&#9660;</span></div>
+        <div class="abody open"><div id="rr"></div></div>
+      </div>
+
+      <div class="asec">
+        <div class="ahdr h-tm open" onclick="tglAcc(this)"><span>Port concurrent : Tanger Med</span><span class="ch">&#9660;</span></div>
+        <div class="abody open"><div id="cr"></div></div>
+      </div>
+
+      <div class="asec">
+        <div class="ahdr h-bcn" onclick="tglAcc(this)"><span>Comp&eacute;tition intra-UE : Valence vs. Barcelone</span><span class="ch">&#9660;</span></div>
+        <div class="abody closed"><div id="br"></div></div>
+      </div>
+
+      <div class="asec">
+        <div class="ahdr h-leg" onclick="tglAcc(this)"><span>L&eacute;gende</span><span class="ch">&#9660;</span></div>
+        <div class="abody closed">
+          <div class="leg">
+            <div class="li"><div class="ld" style="background:#FFD700;box-shadow:0 0 5px #FFD70088"></div>Port de Valence</div>
+            <div class="li"><div class="ld" style="background:#FF8C00"></div>Barcelone (concurrent UE)</div>
+            <div class="li"><div class="ld" style="background:#2255aa"></div>Port UE de r&eacute;f&eacute;rence</div>
+            <div class="li"><div class="ld" style="background:#cc3300"></div>Tanger Med (non-UE)</div>
+            <div class="li"><div class="ld" style="background:#667788"></div>Port d'origine</div>
+            <div class="li"><div class="ll" style="background:#2255aa"></div>Route intra-UE</div>
+            <div class="li"><div class="ll" style="background:#cc3300"></div>Route extra-UE (via Cabo)</div>
+            <div class="li"><div class="ll" style="background:#ff8800"></div>Route rerout&eacute;e</div>
+            <div class="li"><div class="ll" style="background:#888;border-top:1px dashed #888"></div>Feeder Tanger Med</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="src">Sources : IMO 4th GHG Study 2020 &middot; EEX 2024&ndash;2025 &middot; Puertos del Estado 2024 &middot;
+        Lagouvardou &amp; Psaraftis (2022) &middot; Notteboom, Pallis &amp; Rodrigue (2022) &middot;
+        Searates.com (2 avril 2026) &middot; IHM 2018 (Ministerio de Defensa)</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       TAB 2 : CALCULATEUR
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="tab-content" id="tab-calc">
+    <div class="calc-wrap">
+      <div class="calc-container">
+
+        <div class="calc-intro">
+          <h2>&#9881; Calculateur de surco&ucirc;t EU ETS</h2>
+          <p>Estimez le surco&ucirc;t EU ETS pour une route donn&eacute;e en modifiant le prix EUA, l'ann&eacute;e et la route. Activez le mode avanc&eacute; pour ajuster tous les param&egrave;tres du mod&egrave;le.</p>
+        </div>
+
+        <div class="calc-grid">
+
+          <!-- INPUTS -->
+          <div class="calc-inputs">
+            <div class="section-title">Param&egrave;tres principaux</div>
+
+            <div class="input-group">
+              <label>Route</label>
+              <div class="input-row">
+                <select id="c-route">
+                  <option value="R1">R1 &middot; Valence-G&ecirc;nes (522 nm, intra-UE)</option>
+                  <option value="R2">R2 &middot; Valence-Le Havre (1 601 nm, intra-UE)</option>
+                  <option value="R3" selected>R3 &middot; Shanghai-Valence (13 149 nm, extra-UE)</option>
+                  <option value="R4">R4 &middot; Singapour-Valence (11 078 nm, extra-UE)</option>
+                  <option value="custom">Route personnalis&eacute;e (mode avanc&eacute;)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Prix EUA (&euro;/tCO&sup2;)</label>
+              <div class="input-row">
+                <input type="number" id="c-eua" value="65" min="0" max="500" step="1">
+                <span class="unit">&euro;/tCO&sup2;</span>
+              </div>
+              <div class="preset-btns">
+                <button class="preset-btn" onclick="setEUA(40)">S1: 40&euro;</button>
+                <button class="preset-btn active" onclick="setEUA(65)">S2: 65&euro;</button>
+                <button class="preset-btn" onclick="setEUA(80)">S3: 80&euro;</button>
+                <button class="preset-btn" onclick="setEUA(100)">S4: 100&euro;</button>
+                <button class="preset-btn" onclick="setEUA(150)">S5: 150&euro;</button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Ann&eacute;e d'application</label>
+              <div class="input-row">
+                <select id="c-year">
+                  <option value="2024">2024 &middot; Phase-in 40%</option>
+                  <option value="2025" selected>2025 &middot; Phase-in 70%</option>
+                  <option value="2026">2026 &middot; Phase-in 100%</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="advanced-toggle" onclick="tglAdv(this)">
+              <span class="at-label">&#9881; Mode avanc&eacute;</span>
+              <span class="at-arrow">&#9660;</span>
+            </div>
+
+            <div class="advanced-section" id="adv">
+
+              <div class="input-group">
+                <label>Distance de la route</label>
+                <div class="input-row">
+                  <input type="number" id="c-dist" value="13149" min="100" max="20000" step="10">
+                  <span class="unit">nm</span>
+                </div>
+                <div class="help">Distance maritime de la route. Mise &agrave; jour automatique selon le pr&eacute;set s&eacute;lectionn&eacute;.</div>
+              </div>
+
+              <div class="input-group">
+                <label>Type de route</label>
+                <div class="input-row">
+                  <select id="c-type">
+                    <option value="Intra-UE">Intra-UE (couverture 100%)</option>
+                    <option value="Extra-UE" selected>Extra-UE (couverture 50%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label>Fret de r&eacute;f&eacute;rence</label>
+                <div class="input-row">
+                  <input type="number" id="c-fret" value="4480" min="100" max="10000" step="10">
+                  <span class="unit">&euro;/TEU</span>
+                </div>
+                <div class="help">Cotation Searates.com pour la route s&eacute;lectionn&eacute;e (2 avril 2026). Modifiable selon contexte.</div>
+              </div>
+
+              <div class="input-group">
+                <label>Intensit&eacute; d'&eacute;missions DIST</label>
+                <div class="input-row">
+                  <input type="number" id="c-dk" value="908.6" min="100" max="2000" step="0.1">
+                  <span class="unit">kgCO&sup2;/nm</span>
+                </div>
+                <div class="help">Valeur OMI 2020 pour navires 8 000-11 999 TEU : 908,6</div>
+              </div>
+
+              <div class="input-group">
+                <label>Capacit&eacute; nominale</label>
+                <div class="input-row">
+                  <input type="number" id="c-cap" value="10000" min="1000" max="25000" step="100">
+                  <span class="unit">TEU</span>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label>Facteur de charge</label>
+                <div class="input-row">
+                  <input type="number" id="c-lf" value="0.70" min="0.3" max="1" step="0.01">
+                  <span class="unit">(0&ndash;1)</span>
+                </div>
+                <div class="help">Lagouvardou &amp; Psaraftis (2022) : 0,70</div>
+              </div>
+
+              <div class="input-group">
+                <label>&Eacute;lasticit&eacute;-prix de la demande</label>
+                <div class="input-row">
+                  <input type="number" id="c-elas" value="-0.3" min="-1" max="0" step="0.05">
+                  <span class="unit">&minus;</span>
+                </div>
+                <div class="help">Valeur de r&eacute;f&eacute;rence : &minus;0,3. Plage : &minus;0,2 &agrave; &minus;0,5 (Notteboom et al., 2022).</div>
+              </div>
+
+              <div class="input-group">
+                <label>Trafic annuel de base</label>
+                <div class="input-row">
+                  <input type="number" id="c-traf" value="330483" min="0" max="20000000" step="1">
+                  <span class="unit">TEU/an</span>
+                </div>
+                <div class="help">Volume de trafic sur lequel l'&eacute;lasticit&eacute; est appliqu&eacute;e. Trafic intra-UE de Valence en 2024 par d&eacute;faut. Affecte le &Delta;Trafic et le surco&ucirc;t annuel total.</div>
+              </div>
+
+              <div class="input-group">
+                <label>Co&ucirc;t de transbordement (Tanger Med)</label>
+                <div class="input-row">
+                  <input type="number" id="c-trans" value="120" min="0" max="500" step="5">
+                  <span class="unit">&euro;/TEU</span>
+                </div>
+                <div class="help">Lagouvardou &amp; Psaraftis : 60&euro;/move &times; 2 = 120&euro;/TEU</div>
+              </div>
+
+              <div class="input-group">
+                <label>Distance feeder Tanger Med &rarr; Valence</label>
+                <div class="input-row">
+                  <input type="number" id="c-distf" value="392" min="50" max="1000" step="10">
+                  <span class="unit">nm</span>
+                </div>
+                <div class="help">Distance officielle entre Tanger Med et Valence (IHM, 2018).</div>
+              </div>
+
+              <div class="input-group">
+                <label>Prix du combustible (VLSFO)</label>
+                <div class="input-row">
+                  <input type="number" id="c-bunker" value="500" min="200" max="1000" step="10">
+                  <span class="unit">&euro;/tonne</span>
+                </div>
+                <div class="help">Affecte uniquement le co&ucirc;t du feeder dans le calcul du seuil de bascule.</div>
+              </div>
+
+              <div class="section-title" style="margin-top:22px;font-size:10px">Constantes du mod&egrave;le (non modifiables)</div>
+
+              <div class="input-group">
+                <label>Facteur d'&eacute;mission VLSFO (EF)</label>
+                <div class="input-row">
+                  <input type="number" value="3.114" disabled>
+                  <span class="unit">tCO&sup2;/t fuel</span>
+                </div>
+                <div class="help">Constante OMI MEPC, fix&eacute;e par les lignes directrices.</div>
+              </div>
+
+              <div class="input-group">
+                <label>Couverture g&eacute;ographique intra-UE</label>
+                <div class="input-row">
+                  <input type="text" value="100%" disabled>
+                  <span class="unit">&minus;</span>
+                </div>
+                <div class="help">Directive (UE) 2023/959, art. 3 octies bis.</div>
+              </div>
+
+              <div class="input-group">
+                <label>Couverture g&eacute;ographique extra-UE</label>
+                <div class="input-row">
+                  <input type="text" value="50%" disabled>
+                  <span class="unit">&minus;</span>
+                </div>
+                <div class="help">Directive (UE) 2023/959, art. 3 octies bis.</div>
+              </div>
+
+              <div class="input-group">
+                <label>Phase-in 2024 / 2025 / 2026</label>
+                <div class="input-row">
+                  <input type="text" value="40% / 70% / 100%" disabled>
+                  <span class="unit">&minus;</span>
+                </div>
+                <div class="help">Directive (UE) 2023/959, art. 3 octies ter.</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- RESULTS -->
+          <div class="calc-results">
+            <div class="section-title">R&eacute;sultats du calcul</div>
+
+            <div class="formula-box">
+              <strong>Surco&ucirc;t ETS (&euro;/TEU) =</strong><br>
+              DIST &times; Distance / 1 000 &times; Prix EUA &times; Fraction ETS / (Capacit&eacute; &times; Load factor)
+            </div>
+
+            <div class="result-card highlight">
+              <div class="result-label">Surco&ucirc;t ETS par TEU</div>
+              <div class="result-value" id="r-surcout">38,83<span class="result-unit">&euro;/TEU</span></div>
+              <div class="result-detail" id="r-surcout-detail">soit 0,87% du fret de r&eacute;f&eacute;rence</div>
+            </div>
+
+            <div class="result-grid">
+              <div class="result-card">
+                <div class="result-label">&Eacute;missions ETS / voyage</div>
+                <div class="result-value medium" id="r-emis">2 091<span class="result-unit">tCO&sup2;</span></div>
+              </div>
+              <div class="result-card">
+                <div class="result-label">Co&ucirc;t total / voyage</div>
+                <div class="result-value medium" id="r-cvoy">135 945<span class="result-unit">&euro;</span></div>
+              </div>
+            </div>
+
+            <div class="section-title" style="margin-top:24px">Impact sur le trafic</div>
+
+            <div class="result-grid">
+              <div class="result-card">
+                <div class="result-label">&Delta;Trafic estim&eacute;</div>
+                <div class="result-value medium" id="r-dteu">&minus;1 511<span class="result-unit">TEU/an</span></div>
+                <div class="result-detail" id="r-dteu-pct">&minus;0,46% du trafic de base</div>
+              </div>
+              <div class="result-card">
+                <div class="result-label">Surco&ucirc;t annuel chargeurs</div>
+                <div class="result-value medium" id="r-dann">12,8<span class="result-unit">M&euro;/an</span></div>
+              </div>
+            </div>
+
+            <div class="semaphore" id="r-sem">
+              <span class="icon">&#9989;</span>
+              <span id="r-sem-txt">Risque faible : impact inf&eacute;rieur &agrave; 1% du trafic de base</span>
+            </div>
+
+            <div class="section-title" style="margin-top:24px">Reroutage Tanger Med</div>
+
+            <div class="result-grid">
+              <div class="result-card" id="r-incit-card">
+                <div class="result-label">Incitation nette</div>
+                <div class="result-value medium" id="r-incit">&minus;67,3<span class="result-unit">&euro;/TEU</span></div>
+                <div class="result-detail" id="r-incit-msg">&lt; 0 : pas d'incitation au reroutage</div>
+              </div>
+              <div class="result-card">
+                <div class="result-label">Seuil de bascule</div>
+                <div class="result-value medium" id="r-seuil">221<span class="result-unit">&euro;/tCO&sup2;</span></div>
+                <div class="result-detail">Prix EUA &agrave; partir duquel le d&eacute;tour devient attractif</div>
+              </div>
+            </div>
+
+            <div id="r-bcn-section" style="display:none">
+              <div class="section-title" style="margin-top:24px">Diff&eacute;rentiel intra-UE Valence vs. Barcelone</div>
+
+              <div class="result-grid">
+                <div class="result-card">
+                  <div class="result-label">Surco&ucirc;t Valence</div>
+                  <div class="result-value medium" id="r-bcn-val">3,08<span class="result-unit">&euro;/TEU</span></div>
+                </div>
+                <div class="result-card">
+                  <div class="result-label">Surco&ucirc;t Barcelone</div>
+                  <div class="result-value medium" id="r-bcn-bcn">2,66<span class="result-unit">&euro;/TEU</span></div>
+                </div>
+              </div>
+
+              <div class="result-card" id="r-bcn-diff-card">
+                <div class="result-label">Diff&eacute;rentiel</div>
+                <div class="result-value medium" id="r-bcn-diff">+0,42<span class="result-unit">&euro;/TEU</span></div>
+                <div class="result-detail" id="r-bcn-diff-msg">Barcelone l&eacute;g&egrave;rement avantag&eacute;e en raison de sa distance plus courte vers les ports nord-europ&eacute;ens.</div>
+              </div>
+            </div>
+
+            <div class="note-bottom">
+              Les r&eacute;sultats se mettent &agrave; jour automatiquement &agrave; chaque modification d'un param&egrave;tre.<br>
+              Pour une exploration g&eacute;ographique, utilisez l'onglet <strong>Carte interactive</strong>.<br>
+              <span style="display:inline-block;margin-top:8px;padding-top:8px;border-top:1px solid #e8eef5;color:#6a8aaa">
+                Pour recevoir le fichier Excel multilingue (FR / ES / CA), contactez l'auteur :
+                <a href="mailto:pablomgonzalez03@gmail.com" style="color:#1F3864;font-weight:bold;text-decoration:none">pablomgonzalez03@gmail.com</a>
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <script>
-const ROUTES_DATA={"R1":[[39.430018,-0.309838],[39.591864,-0.064152],[39.7,0.1],[40.045307,0.617961],[40.16417,0.796254],[40.175086,0.81263],[40.324025,1.036038],[40.756134,1.684202],[40.837987,1.806981],[41.176068,2.314102],[41.197216,2.345825],[41.3,2.5],[41.868966,3.827586],[42.377158,5.013369],[42.37724,5.013561],[42.381348,5.023145],[42.455868,5.197026],[42.5291,5.367901],[42.554952,5.428222],[42.8,6],[43.439398,7.43475],[43.522,7.6201],[43.6,7.8],[43.903642,8.862165],[44.2821,8.9876]],"R2":[[39.430018,-0.309838],[38.995264,0.129546],[38.7897,0.3373],[38.480858,0.267518],[38.441352,0.258592],[38.2,0],[37.511837,-0.589854],[37.5,-0.6],[36.6,-2.1],[36.6,-2.508613],[36.6,-3.464998],[36.6,-3.559793],[36.6,-3.811553],[36.488703,-4.070282],[36.339533,-4.417056],[35.97289,-5.269383],[35.968819,-5.354867],[35.95,-5.75],[36.31906,-7.26966],[36.549727,-8.219465],[36.8,-9.25],[37.781589,-9.452092],[38.5,-9.6],[40.7798,-9.9844],[43,-9.5],[43.687223,-9.143299],[43.688493,-9.14264],[43.689329,-9.142206],[43.924891,-9.019938],[44.934776,-8.49576],[45.668797,-7.954994],[47.340067,-6.698867],[48.6667,-5.5],[48.799916,-5.06401],[49.042365,-4.270518],[49.115729,-4.030414],[49.129249,-3.986163],[49.370363,-3.197043],[49.616376,-2.39189],[49.738559,-1.992006],[49.75639,-1.93365],[49.838248,-1.665743],[49.895072,-1.47977],[49.95,-1.3],[49.743161,-0.75523],[49.742898,-0.754538],[49.604849,-0.390945],[49.4978,-0.109],[49.485898,0.082233]],"R3":[[30.732393,121.827393],[30.8345,122.6776],[30.181935,122.875214],[28.733947,122.211914],[27.8,121.3],[25.7,120],[25.085599,119.761963],[24.542126,118.937988],[23.765237,118.103027],[23,117],[21.7,114.1],[16.9609,112.0495],[16.951468,112.045638],[16.378371,111.810965],[12.2,110.1],[7.6091,107.3207],[1.341312,104.482294],[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]],"R4":[[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]],"R3_TM":[[30.732393,121.827393],[30.8345,122.6776],[30.181935,122.875214],[28.733947,122.211914],[27.8,121.3],[25.7,120],[25.085599,119.761963],[24.542126,118.937988],[23.765237,118.103027],[23,117],[21.7,114.1],[16.9609,112.0495],[16.951468,112.045638],[16.378371,111.810965],[12.2,110.1],[7.6091,107.3207],[1.341312,104.482294],[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.904932,-5.336225]],"R4_TM":[[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.904932,-5.336225]],"F_TM":[[35.904932,-5.336225],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]]};
-const DIST_KG=908.6,CAP=10000,LF=0.70,EF=3.114;
-const FRAC={'2024':{'Intra-UE':0.40,'Extra-UE':0.20},'2025':{'Intra-UE':0.70,'Extra-UE':0.35},'2026':{'Intra-UE':1.00,'Extra-UE':0.50}};
-const ROUTES=[
-  {id:'R1',name:'Valence ↔ Gênes',          dist:522,  type:'Intra-UE',fret:1379},
-  {id:'R2',name:'Valence ↔ Le Havre',        dist:1601, type:'Intra-UE',fret:3795},
-  {id:'R3',name:'Shanghai → Valence (Cabo)', dist:13149,type:'Extra-UE',fret:4480},
-  {id:'R4',name:'Singapour → Valence (Cabo)',dist:11078,type:'Extra-UE',fret:2939},
+// ═══════════════════════════════════════════════════════════════════════════
+// MAP DATA (extracted from previous version)
+// ═══════════════════════════════════════════════════════════════════════════
+var RD = {"R1":[[39.430018,-0.309838],[39.591864,-0.064152],[39.7,0.1],[40.045307,0.617961],[40.16417,0.796254],[40.175086,0.81263],[40.324025,1.036038],[40.756134,1.684202],[40.837987,1.806981],[41.176068,2.314102],[41.197216,2.345825],[41.3,2.5],[41.868966,3.827586],[42.377158,5.013369],[42.37724,5.013561],[42.381348,5.023145],[42.455868,5.197026],[42.5291,5.367901],[42.554952,5.428222],[42.8,6],[43.439398,7.43475],[43.522,7.6201],[43.6,7.8],[43.903642,8.862165],[44.2821,8.9876]],"R2":[[39.430018,-0.309838],[38.995264,0.129546],[38.7897,0.3373],[38.480858,0.267518],[38.441352,0.258592],[38.2,0],[37.511837,-0.589854],[37.5,-0.6],[36.6,-2.1],[36.6,-2.508613],[36.6,-3.464998],[36.6,-3.559793],[36.6,-3.811553],[36.488703,-4.070282],[36.339533,-4.417056],[35.97289,-5.269383],[35.968819,-5.354867],[35.95,-5.75],[36.31906,-7.26966],[36.549727,-8.219465],[36.8,-9.25],[37.781589,-9.452092],[38.5,-9.6],[40.7798,-9.9844],[43,-9.5],[43.687223,-9.143299],[43.688493,-9.14264],[43.689329,-9.142206],[43.924891,-9.019938],[44.934776,-8.49576],[45.668797,-7.954994],[47.340067,-6.698867],[48.6667,-5.5],[48.799916,-5.06401],[49.042365,-4.270518],[49.115729,-4.030414],[49.129249,-3.986163],[49.370363,-3.197043],[49.616376,-2.39189],[49.738559,-1.992006],[49.75639,-1.93365],[49.838248,-1.665743],[49.895072,-1.47977],[49.95,-1.3],[49.743161,-0.75523],[49.742898,-0.754538],[49.604849,-0.390945],[49.4978,-0.109],[49.485898,0.082233]],"R3":[[30.732393,121.827393],[30.8345,122.6776],[30.181935,122.875214],[28.733947,122.211914],[27.8,121.3],[25.7,120],[25.085599,119.761963],[24.542126,118.937988],[23.765237,118.103027],[23,117],[21.7,114.1],[16.9609,112.0495],[16.951468,112.045638],[16.378371,111.810965],[12.2,110.1],[7.6091,107.3207],[1.341312,104.482294],[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]],"R4":[[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]],"R3_TM":[[30.732393,121.827393],[30.8345,122.6776],[30.181935,122.875214],[28.733947,122.211914],[27.8,121.3],[25.7,120],[25.085599,119.761963],[24.542126,118.937988],[23.765237,118.103027],[23,117],[21.7,114.1],[16.9609,112.0495],[16.951468,112.045638],[16.378371,111.810965],[12.2,110.1],[7.6091,107.3207],[1.341312,104.482294],[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.904932,-5.336225]],"R4_TM":[[1.1,103.6],[2,102],[3.2,100.6],[7,97],[6.7,94],[3.3521,91.9932],[-3e-05,90.0],[-1e-05,90],[-1e-05,86.112347],[-1e-05,85],[-2e-05,80],[-5.0004,80.0003],[-10,80],[-11.663869,78.415232],[-12.5389,77.5818],[-15.0555,75.1163],[-15.170393,74.999806],[-17.5444,72.5927],[-20,70],[-25.085,65.2028],[-25.776417,64.470897],[-28.953503,61.107776],[-29.0853,60.7033],[-29.331435,59.850755],[-29.435362,59.490784],[-30.049282,57.364335],[-30.2623,56.6265],[-31.3109,52.4574],[-31.534939,51.411778],[-31.837267,50.000771],[-32.2227,48.2019],[-32.27482,47.907599],[-32.9902,43.8681],[-33.128872,42.877817],[-33.531655,40.001483],[-33.6065,39.467],[-33.923893,36.390766],[-34.0662,35.0115],[-34.365,30.517],[-34.5,26],[-35,22],[-35,18],[-33.5827,14.0806],[-32.0552,10.2901],[-31.926949,10.000809],[-31.368532,8.741211],[-30.43,6.6242],[-30.076823,5.891411],[-28.7199,3.076],[-28.169477,2.015382],[-27.123985,0.00081],[-26.9357,-0.362],[-25.0916,-3.7008],[-24.677177,-4.412459],[-23.1989,-6.951],[-23.154038,-7.024709],[-20,-10],[-15.0011,-9.9992],[-12.890797,-9.999538],[-10,-10],[-5.0004,-9.9997],[-2e-05,-10],[5.5302,-13.4277],[11,-17],[15,-18],[21,-18],[27.705078,-13.618653],[29.156452,-12.194387],[31.8,-10.1],[33.6,-8.8],[33.623031,-8.751058],[34.076471,-7.7875],[34.4,-7.1],[35.95,-5.75],[35.968819,-5.354867],[35.904932,-5.336225]],"F_TM":[[35.904932,-5.336225],[35.97289,-5.269383],[36.339533,-4.417056],[36.488703,-4.070282],[36.6,-3.811553],[36.6,-3.559793],[36.6,-3.464998],[36.6,-2.508613],[36.6,-2.1],[37.5,-0.6],[37.511837,-0.589854],[38.2,0],[38.441352,0.258592],[38.480858,0.267518],[38.7897,0.3373],[38.995264,0.129546],[39.430018,-0.309838]]};
+var DK=908.6,CAP=10000,LF=0.70,EF=3.114;
+var FR={'2024':{'Intra-UE':0.40,'Extra-UE':0.20},'2025':{'Intra-UE':0.70,'Extra-UE':0.35},'2026':{'Intra-UE':1.00,'Extra-UE':0.50}};
+var RT=[
+  {id:'R1',nm:'Valence - G\u00eanes',         dist:522,  tp:'Intra-UE',fr:1379},
+  {id:'R2',nm:'Valence - Le Havre',           dist:1601, tp:'Intra-UE',fr:3795},
+  {id:'R3',nm:'Shanghai - Valence (Cabo)',    dist:13149,tp:'Extra-UE',fr:4480},
+  {id:'R4',nm:'Singapour - Valence (Cabo)',   dist:11078,tp:'Extra-UE',fr:2939}
 ];
-const CONCURRENTS=[
-  {id:'TM',name:'Tanger Med',flag:'🇲🇦',dist_f:392,trans:120,ll:[35.88,-5.50]},
+var BR=[
+  {id:'R1',nm:'Barcelone - G\u00eanes',  dist:450, tp:'Intra-UE',fr:1379},
+  {id:'R2',nm:'Barcelone - Le Havre',    dist:1550,tp:'Intra-UE',fr:3795}
 ];
-function surcout(d,t,p,y){return DIST_KG*d/1000*p*FRAC[y][t]/(CAP*LF)}
-function bunkerCost(d,o){return (DIST_KG/1000/EF)*d*o/(CAP*LF)}
-function incit(rd,t,p,y,df,trans,oilP){
-  return DIST_KG*(rd-df)/1000*p*FRAC[y][t]/(CAP*LF)-trans-bunkerCost(df,oilP)}
-function seuil(rd,t,y,df,trans,oilP){
-  const fb=bunkerCost(df,oilP);
-  const d=DIST_KG*(rd-df)*FRAC[y][t]/(1000*CAP*LF);
-  return d>0?(trans+fb)/d:Infinity}
-function getActiveComp(r,p,y,o){
-  let best=null,bestInc=-Infinity;
-  CONCURRENTS.forEach(c=>{
-    if(r.dist<=c.dist_f)return;
-    const inc=incit(r.dist,r.type,p,y,c.dist_f,c.trans,o);
-    if(inc>0&&inc>bestInc){bestInc=inc;best=c;}
-  });
-  return best;}
-function costCol(c){
-  if(c<10)return '#2e7d32';if(c<25)return '#7cb342';
-  if(c<50)return '#f9a825';if(c<80)return '#e64a19';return '#b71c1c';}
+var CC=[{id:'TM',nm:'Tanger Med',df:392,tc:120,ll:[35.88,-5.50]}];
 
-const map=L.map('map',{center:[20,30],zoom:3});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-  attribution:'© OpenStreetMap contributors © CARTO',maxZoom:14,subdomains:'abcd'}).addTo(map);
-
-const PDATA={
-  Valencia: {ll:[39.47,-0.33], type:'main',lbl:'PORT DE VALENCE'},
-  Genoa:    {ll:[44.41, 8.93], type:'eu',  lbl:'Gênes'},
-  LeHavre:  {ll:[49.49, 0.11], type:'eu',  lbl:'Le Havre'},
-  TangerMed:{ll:[35.88,-5.50], type:'conc',lbl:'Tanger Med'},
-  Shanghai: {ll:[31.22,121.47],type:'orig', lbl:'Shanghai'},
-  Singapore:{ll:[1.35,103.82], type:'orig', lbl:'Singapour'},
-};
-const PCOL={main:'#FFD700',eu:'#2255aa',conc:'#cc3300',orig:'#667788'};
-const PSZ={main:18,eu:11,conc:11,orig:8};
-Object.entries(PDATA).forEach(([k,p])=>{
-  const sz=PSZ[p.type],col=PCOL[p.type],pulse=k==='Valencia';
-  L.marker(p.ll,{icon:L.divIcon({className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],
-    html:`<div class="${pulse?'pulse-dot':''}" style="width:${sz}px;height:${sz}px;background:${col};
-      border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 ${pulse?14:5}px ${col}aa"></div>`})})
-    .addTo(map).bindTooltip(`<b>${p.lbl}</b>`,{direction:'top',offset:[0,-sz/2]});
-  if(p.type!=='orig'){
-    const dir=k==='Valencia'?'right':'top';
-    const cls=`lbl lbl-${p.type==='main'?'main':p.type==='eu'?'eu':'conc'}`;
-    L.tooltip({permanent:true,direction:dir,className:cls,offset:[0,-sz/2-2]})
-      .setContent(p.lbl).setLatLng(p.ll).addTo(map);
+function sc(d,t,p,y){return DK*d/1000*p*FR[y][t]/(CAP*LF);}
+function bk(d,o){return (DK/1000/EF)*d*o/(CAP*LF);}
+function inc_f(rd,t,p,y,df,tc,o){return DK*(rd-df)/1000*p*FR[y][t]/(CAP*LF)-tc-bk(df,o);}
+function se(rd,t,y,df,tc,o){var fb=bk(df,o),d=DK*(rd-df)*FR[y][t]/(1000*CAP*LF);return d>0?(tc+fb)/d:Infinity;}
+function ac(r,p,y,o){
+  var best=null,bi=-Infinity;
+  for(var i=0;i<CC.length;i++){
+    var c=CC[i];
+    if(r.dist<=c.df)continue;
+    var iv=inc_f(r.dist,r.tp,p,y,c.df,c.tc,o);
+    if(iv>0&&iv>bi){bi=iv;best=c;}
   }
-});
+  return best;
+}
+function cc2(v){
+  if(v<10)return '#2e7d32';if(v<25)return '#7cb342';
+  if(v<50)return '#f9a825';if(v<80)return '#e64a19';return '#b71c1c';
+}
 
-// Route lines + invisible thick click-target layer
-const rlines={}, rclick={};
-let selectedRoute=null;
+// ═══════════════════════════════════════════════════════════════════════════
+// MAP INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════════════
+var map = L.map('map',{center:[20,30],zoom:3});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OSM &copy; CARTO',maxZoom:14,subdomains:'abcd'
+}).addTo(map);
 
-ROUTES.forEach(r=>{
-  const col=r.type==='Intra-UE'?'#2255aa':'#cc3300';
-  // Visible line
-  const pl=L.polyline(ROUTES_DATA[r.id],{color:col,weight:2.5,opacity:.8,dashArray:'8 5',interactive:false}).addTo(map);
-  // Invisible thick clickable layer on top
-  const cl=L.polyline(ROUTES_DATA[r.id],{color:'#000',weight:12,opacity:0,interactive:true}).addTo(map);
-  cl.bindTooltip(`<b>${r.name}</b><br>${r.dist.toLocaleString('fr')} nm · ${r.type}`,{sticky:true});
-  cl.on('click',e=>{L.DomEvent.stopPropagation(e);highlightRoute(r.id)});
-  cl.on('mouseover',()=>{if(selectedRoute!==r.id)pl.setStyle({weight:4,opacity:1})});
-  cl.on('mouseout',()=>{if(selectedRoute!==r.id)pl.setStyle({weight:2.5,opacity:.8})});
-  rlines[r.id]=pl; rclick[r.id]=cl;
-});
+var PD={
+  Valencia: {ll:[39.47,-0.33], tp:'main',lb:'PORT DE VALENCE'},
+  Barcelona:{ll:[41.38, 2.18], tp:'bcn', lb:'Barcelone'},
+  Genoa:    {ll:[44.41, 8.93], tp:'eu',  lb:'G\u00eanes'},
+  LeHavre:  {ll:[49.49, 0.11], tp:'eu',  lb:'Le Havre'},
+  TM:       {ll:[35.88,-5.50], tp:'conc',lb:'Tanger Med'},
+  Shanghai: {ll:[31.22,121.47],tp:'orig',lb:'Shanghai'},
+  Singapore:{ll:[1.35,103.82], tp:'orig',lb:'Singapour'}
+};
+var PC={main:'#FFD700',bcn:'#FF8C00',eu:'#2255aa',conc:'#cc3300',orig:'#667788'};
+var PS={main:18,bcn:13,eu:11,conc:11,orig:8};
 
-map.on('click',()=>{
-  selectedRoute=null;
-  document.querySelectorAll('.rc').forEach(e=>e.classList.remove('active-route'));
+var keys=Object.keys(PD);
+for(var ki=0;ki<keys.length;ki++){
+  var k=keys[ki],pt=PD[k];
+  var sz=PS[pt.tp],col=PC[pt.tp],pulse=(k==='Valencia');
+  var ih='<div class="'+(pulse?'pd':'')+'" style="width:'+sz+'px;height:'+sz+'px;background:'+col+
+    ';border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 '+(pulse?14:6)+'px '+col+'88"></div>';
+  L.marker(pt.ll,{icon:L.divIcon({className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],html:ih})})
+    .addTo(map).bindTooltip('<b>'+pt.lb+'</b>',{direction:'top',offset:[0,-sz/2]});
+  if(pt.tp!=='orig'){
+    var dir=(k==='Valencia'||k==='Barcelona')?'right':'top';
+    var cls='lbl lbl-'+(pt.tp==='main'?'main':pt.tp==='bcn'?'bcn':pt.tp==='eu'?'eu':'conc');
+    L.tooltip({permanent:true,direction:dir,className:cls,offset:[0,-sz/2-2]})
+      .setContent(pt.lb).setLatLng(pt.ll).addTo(map);
+  }
+}
+
+var rl={},rc2={},sel=null;
+
+for(var ri=0;ri<RT.length;ri++){
+  (function(r){
+    var col=r.tp==='Intra-UE'?'#2255aa':'#cc3300';
+    var pl=L.polyline(RD[r.id],{color:col,weight:2.5,opacity:.8,dashArray:'8 5',interactive:false}).addTo(map);
+    var cl=L.polyline(RD[r.id],{color:'#000',weight:12,opacity:0,interactive:true}).addTo(map);
+    cl.bindTooltip('<b>'+r.nm+'</b><br>'+r.dist+' nm &middot; '+r.tp,{sticky:true});
+    cl.on('click',function(e){L.DomEvent.stopPropagation(e);hlR(r.id);});
+    cl.on('mouseover',function(){if(sel!==r.id)pl.setStyle({weight:4,opacity:1});});
+    cl.on('mouseout',function(){if(sel!==r.id)pl.setStyle({weight:2.5,opacity:.8});});
+    rl[r.id]=pl;rc2[r.id]=cl;
+  })(RT[ri]);
+}
+
+map.on('click',function(){
+  sel=null;
+  var cards=document.querySelectorAll('.rc');
+  for(var i=0;i<cards.length;i++)cards[i].classList.remove('sel');
   render();
 });
 
-const fLines={
-  TM:L.polyline(ROUTES_DATA.F_TM,{color:'#667788',weight:2,opacity:0,dashArray:'6 5',interactive:false}).addTo(map),
-};
+var fTM=L.polyline(RD.F_TM,{color:'#667788',weight:2,opacity:0,dashArray:'6 5',interactive:false}).addTo(map);
 
-function highlightRoute(rid){
-  selectedRoute=rid;
-  document.querySelectorAll('.rc').forEach(e=>e.classList.remove('active-route'));
-  const card=document.getElementById('card-'+rid);
-  if(card){card.classList.add('active-route');card.scrollIntoView({behavior:'smooth',block:'nearest'})}
-  Object.keys(rlines).forEach(id=>{
-    rlines[id].setStyle({opacity: id===rid ? 1 : 0.3});
-    if(id===rid)rlines[id].bringToFront();
-  });
-  rlines[rid].setStyle({weight:5});
+function hlR(rid){
+  sel=rid;
+  var cards=document.querySelectorAll('.rc');
+  for(var i=0;i<cards.length;i++)cards[i].classList.remove('sel');
+  var card=document.getElementById('c'+rid);
+  if(card){card.classList.add('sel');card.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  var ids=Object.keys(rl);
+  for(var i=0;i<ids.length;i++)rl[ids[i]].setStyle({opacity:ids[i]===rid?1:0.3});
+  rl[rid].setStyle({weight:5,opacity:1});
+  rl[rid].bringToFront();
 }
 
-let curPrice=65,curYear='2025',curOil=500,panelOpen=true;
-function toggleAcc(h){const b=h.nextElementSibling,o=h.classList.contains('open');
-  h.classList.toggle('open',!o);b.classList.toggle('open',!o);b.classList.toggle('closed',o)}
-function togglePanel(){panelOpen=!panelOpen;
-  document.getElementById('panel').classList.toggle('collapsed',!panelOpen);
-  document.getElementById('toggle-btn').textContent=panelOpen?'▶':'◀';
-  setTimeout(()=>map.invalidateSize(),320)}
-function setPrice(p){curPrice=p;document.getElementById('pslider').value=p;syncEua();render()}
-function syncEua(){
-  const v=curPrice,pct=((v-40)/260*100).toFixed(1)+'%';
-  document.getElementById('pslider').style.setProperty('--pct',pct);
-  document.getElementById('pdisp').textContent=v;
-  document.querySelectorAll('.sc-btn').forEach(b=>b.classList.remove('active'));
-  const m={40:0,65:1,80:2,100:3,150:4};
-  if(m[v]!==undefined)document.querySelectorAll('.sc-btn')[m[v]].classList.add('active')}
-function syncOil(){const pct=((curOil-300)/400*100).toFixed(1)+'%';
-  document.getElementById('oslider').style.setProperty('--pct',pct);
-  document.getElementById('odisp').textContent=curOil}
+var cP=65,cY='2025',cO=500,pO=true;
+
+function tglAcc(h){
+  var b=h.nextElementSibling,o=h.classList.contains('open');
+  h.classList.toggle('open',!o);
+  b.classList.toggle('open',!o);
+  b.classList.toggle('closed',o);
+}
+
+function tglPanel(){
+  pO=!pO;
+  document.getElementById('panel').classList.toggle('collapsed',!pO);
+  document.getElementById('tbtn').innerHTML=pO?'&#9664;':'&#9654;';
+  setTimeout(function(){map.invalidateSize();},320);
+}
+
+function setP(p){cP=p;document.getElementById('ps').value=p;syncE();render();}
+
+function syncE(){
+  var v=cP,pct=((v-40)/260*100).toFixed(1)+'%';
+  document.getElementById('ps').style.setProperty('--pct',pct);
+  document.getElementById('pd').textContent=v;
+  var btns=document.querySelectorAll('#tab-map .sb');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
+  var m={40:0,65:1,80:2,100:3,150:4};
+  if(m[v]!==undefined)btns[m[v]].classList.add('active');
+}
+
+function syncO(){
+  var pct=((cO-300)/400*100).toFixed(1)+'%';
+  document.getElementById('os').style.setProperty('--pct',pct);
+  document.getElementById('od').textContent=cO;
+}
 
 function render(){
-  const p=curPrice,y=curYear,o=curOil;
-  let anyDivert=false;
-  const activeComps={R3:null,R4:null};
-  ROUTES.filter(r=>r.type==='Extra-UE').forEach(r=>{
-    activeComps[r.id]=getActiveComp(r,p,y,o);
-    if(activeComps[r.id])anyDivert=true;
-  });
-  document.getElementById('divert-alert').classList.toggle('active',anyDivert);
-  Object.values(fLines).forEach(l=>l.setStyle({opacity:0}));
+  var p=cP,y=cY,o=cO;
+  var anyDiv=false;
+  var activeComps={R3:null,R4:null};
+  for(var i=0;i<RT.length;i++){
+    if(RT[i].tp==='Extra-UE'){
+      activeComps[RT[i].id]=ac(RT[i],p,y,o);
+      if(activeComps[RT[i].id])anyDiv=true;
+    }
+  }
+  document.getElementById('da').classList.toggle('on',anyDiv);
+  fTM.setStyle({opacity:0});
 
-  let html='';
-  ROUTES.forEach(r=>{
-    const c=surcout(r.dist,r.type,p,y);
-    const bunk=bunkerCost(r.dist,o);
-    const pct=c/r.fret*100,pctB=bunk>0?c/bunk*100:0;
-    const col=costCol(c),barW=Math.min(pct*10,100).toFixed(0);
-    const ac=r.type==='Extra-UE'?activeComps[r.id]:null;
-    const isSelected=selectedRoute===r.id;
+  var html='';
+  for(var i=0;i<RT.length;i++){
+    var r=RT[i];
+    var cv=sc(r.dist,r.tp,p,y);
+    var pct=cv/r.fr*100;
+    var col=cc2(cv),bw=Math.min(pct*10,100).toFixed(0);
+    var acp=r.tp==='Extra-UE'?activeComps[r.id]:null;
+    var isSel=(sel===r.id);
 
-    if(r.type==='Extra-UE'){
-      const dataKey=ac?`${r.id}_${ac.id}`:r.id;
-      const rd=ROUTES_DATA[dataKey]||ROUTES_DATA[r.id];
-      rlines[r.id].setLatLngs(rd);
-      rclick[r.id].setLatLngs(rd);
-      const baseCol=ac?'#ff8800':'#cc3300';
-      rlines[r.id].setStyle({color:baseCol,weight:isSelected?5:ac?3.5:2.5,
-        opacity:isSelected?1:ac?.9:.8,dashArray:ac?'10 4':'8 5'});
-      if(ac){fLines[ac.id].setStyle({opacity:.7,weight:2});fLines[ac.id].bringToFront()}
+    if(r.tp==='Extra-UE'){
+      var dataKey=acp?(r.id+'_'+acp.id):r.id;
+      var rd2=RD[dataKey]||RD[r.id];
+      rl[r.id].setLatLngs(rd2);rc2[r.id].setLatLngs(rd2);
+      var baseCol=acp?'#ff8800':'#cc3300';
+      rl[r.id].setStyle({color:baseCol,weight:isSel?5:acp?3.5:2.5,opacity:isSel?1:.85,dashArray:acp?'10 4':'8 5'});
+      if(acp){fTM.setStyle({opacity:.7,weight:2});fTM.bringToFront();}
     } else {
-      rlines[r.id].setStyle({color:costCol(c),
-        weight:isSelected?5:Math.min(2+c/20,5),opacity:isSelected?1:.8});
+      rl[r.id].setStyle({color:cc2(cv),weight:isSel?5:Math.min(2+cv/20,5),opacity:isSel?1:.8});
     }
 
-    const incItm=ac?incit(r.dist,r.type,p,y,ac.dist_f,ac.trans,o):null;
-    html+=`<div class="rc ${r.type==='Extra-UE'?'extra':''} ${ac?'diverted':''} ${isSelected?'active-route':''}"
-      id="card-${r.id}" onclick="highlightRoute('${r.id}');event.stopPropagation()">
-      <div class="rname">${r.id} · ${r.name}</div>
-      <div class="rcost" style="color:${col}">€${c.toFixed(2)}<span style="font-size:11px;color:#8aaac0"> /TEU</span></div>
-      <div class="rpct">${pct.toFixed(2)}% du fret réf. (€${r.fret.toLocaleString('fr')}/TEU)</div>
-      <div class="rbar"><div class="rbar-fill" style="width:${barW}%;background:${col}"></div></div>
-      <div class="rbunker">Combustible : €${bunk.toFixed(0)}/TEU · ETS = ${pctB.toFixed(1)}% du combustible</div>
-      <div class="rdetail">${r.dist.toLocaleString('fr')} nm · ${r.type} · ETS: ${(FRAC[y][r.type]*100).toFixed(0)}%</div>
-      ${ac?`<div class="rdivert">⚠ Reroutage via ${ac.flag} ${ac.name} · incitation nette : +€${incItm.toFixed(1)}/TEU</div>`:''}
-    </div>`;
-  });
-  document.getElementById('rresults').innerHTML=html;
+    var dv='';
+    if(acp){
+      var iv=inc_f(r.dist,r.tp,p,y,acp.df,acp.tc,o);
+      dv='<div class="rdv">&#9888; Reroutage via '+acp.nm+' &middot; +&euro;'+iv.toFixed(1)+'/TEU</div>';
+    }
+    var cls2='rc'+(r.tp==='Extra-UE'?' ex':'')+(acp?' dv':'')+(isSel?' sel':'');
+    html+='<div class="'+cls2+'" id="c'+r.id+'" onclick="hlR(\''+r.id+'\');event.stopPropagation()">';
+    html+='<div class="rn">'+r.id+' &middot; '+r.nm+'</div>';
+    html+='<div class="rv" style="color:'+col+'">&euro;'+cv.toFixed(2)+'<span style="font-size:11px;color:#8aaac0"> /TEU</span></div>';
+    html+='<div class="rp">'+pct.toFixed(2)+'% du fret (&euro;'+r.fr.toLocaleString('fr')+'/TEU)</div>';
+    html+='<div class="rb"><div class="rbf" style="width:'+bw+'%;background:'+col+'"></div></div>';
+    html+='<div class="rd">'+r.dist.toLocaleString('fr')+' nm &middot; '+r.tp+' &middot; ETS: '+(FR[y][r.tp]*100).toFixed(0)+'%</div>';
+    html+=dv+'</div>';
+  }
+  document.getElementById('rr').innerHTML=html;
 
-  const extR=ROUTES.filter(r=>r.type==='Extra-UE');
-  let chtml='';
-  CONCURRENTS.forEach(cc=>{
-    const feederB=bunkerCost(cc.dist_f,o);
-    chtml+=`<div class="cc"><h4>${cc.flag} ${cc.name}
-      <span style="font-size:9px;color:#a08060;font-weight:normal"> · feeder ${cc.dist_f} nm · transbordt. €${cc.trans}/TEU · combustible feeder : €${feederB.toFixed(0)}/TEU</span></h4>`;
-    let anyDgr=false;
-    extR.forEach(r=>{
-      const inc=incit(r.dist,r.type,p,y,cc.dist_f,cc.trans,o);
-      const seu=seuil(r.dist,r.type,y,cc.dist_f,cc.trans,o);
-      if(inc>0)anyDgr=true;
-      chtml+=`<div class="crow"><span>${r.id} · Économie ETS brute</span><span class="cval">€${(inc+cc.trans+feederB).toFixed(1)}/TEU</span></div>
-        <div class="crow"><span>${r.id} · Coût total du détour</span><span class="cval">€${(cc.trans+feederB).toFixed(1)}/TEU</span></div>
-        <div class="crow"><span>${r.id} · Incitation nette</span>
-          <span style="font-weight:bold;color:${inc>0?'#c62828':'#2e7d32'}">${inc>0?'+':''}${inc.toFixed(1)} €/TEU</span></div>
-        <div class="crow"><span>${r.id} · Seuil de bascule</span>
-          <span style="font-weight:bold;color:#c87000">€${isFinite(seu)?seu.toFixed(0):'N/A'}/tCO₂</span></div>
-        <hr style="border-color:#f0d0c0;margin:5px 0">`;
+  var extR=RT.filter(function(r){return r.tp==='Extra-UE';});
+  var ch='';
+  CC.forEach(function(cc3){
+    ch+='<div class="cc"><h4>'+cc3.nm+' <span style="font-size:9px;color:#a08060;font-weight:normal">&middot; feeder '+cc3.df+' nm &middot; transbordt. &euro;'+cc3.tc+'/TEU</span></h4>';
+    var anyD=false;
+    var sm=Infinity;
+    extR.forEach(function(r2){
+      var iv2=inc_f(r2.dist,r2.tp,p,y,cc3.df,cc3.tc,o);
+      var sv=se(r2.dist,r2.tp,y,cc3.df,cc3.tc,o);
+      if(iv2>0)anyD=true;
+      if(isFinite(sv)&&sv<sm)sm=sv;
+      ch+='<div class="crow"><span>'+r2.id+' &middot; Incitation nette</span>';
+      ch+='<span style="font-weight:bold;color:'+(iv2>0?'#c62828':'#2e7d32')+'">'+(iv2>0?'+':'')+iv2.toFixed(1)+' &euro;/TEU</span></div>';
+      ch+='<div class="crow"><span>'+r2.id+' &middot; Seuil de bascule</span>';
+      ch+='<span style="font-weight:bold;color:#c87000">&euro;'+(isFinite(sv)?sv.toFixed(0):'N/A')+'/tCO&sup2;</span></div>';
     });
-    const seuilMin=Math.min(...extR.map(r=>{const s=seuil(r.dist,r.type,y,cc.dist_f,cc.trans,o);return isFinite(s)?s:9999}));
-    let ind,cls;
-    if(anyDgr){ind=`⚠ REROUTAGE ACTIF · seuil dépassé à €${p}/tCO₂`;cls='danger';}
-    else if(seuilMin<=250){ind=`⚡ Seuil proche · bascule à €${seuilMin.toFixed(0)}/tCO₂`;cls='warn';}
-    else{ind=`✓ Seuil élevé · min. €${seuilMin.toFixed(0)}/tCO₂`;cls='safe';}
-    chtml+=`<div class="seuil ${cls}">${ind}</div></div>`;
+    var ind2,cls3;
+    if(anyD){ind2='&#9888; REROUTAGE ACTIF &agrave; &euro;'+p+'/tCO&sup2;';cls3='danger';}
+    else if(sm<=250){ind2='&#9889; Seuil proche &middot; bascule &agrave; &euro;'+sm.toFixed(0)+'/tCO&sup2;';cls3='warn';}
+    else{ind2='&#10003; Seuil &eacute;lev&eacute; &middot; min. &euro;'+(isFinite(sm)?sm.toFixed(0):'N/A')+'/tCO&sup2;';cls3='safe';}
+    ch+='<div class="seuil '+cls3+'">'+ind2+'</div></div>';
   });
-  document.getElementById('cresults').innerHTML=chtml;
+  document.getElementById('cr').innerHTML=ch;
+
+  var intraRoutes=RT.filter(function(r){return r.tp==='Intra-UE';});
+  var bh='<div class="bc"><h4>&#9888; Valence vs. Barcelone &mdash; diff&eacute;rentiel surc&ucirc;t ETS</h4>';
+  bh+='<p style="font-size:9px;color:#7a6000;margin-bottom:8px;line-height:1.5">Barcelone est l&eacute;g&egrave;rement plus proche de G&ecirc;nes (~450 nm) et Le Havre (~1 550 nm) que Valence. Le diff&eacute;rentiel s\'accumule sur des milliers de TEU/an.</p>';
+  intraRoutes.forEach(function(rv){
+    var rb2=null;
+    for(var bi2=0;bi2<BR.length;bi2++){if(BR[bi2].id===rv.id){rb2=BR[bi2];break;}}
+    if(!rb2)return;
+    var cv2=sc(rv.dist,rv.tp,p,y);
+    var cb=sc(rb2.dist,rb2.tp,p,y);
+    var df=cv2-cb;
+    var fc=df>0.2?'#c62828':df<-0.2?'#2e7d32':'#888';
+    var fl=df>0.2?'Barcelone avantagee':df<-0.2?'Valence avantagee':'Parite';
+    bh+='<div style="margin-bottom:8px;padding:6px 0;border-bottom:1px solid #ffe082">';
+    bh+='<div style="font-size:10px;font-weight:bold;color:#7a5000;margin-bottom:4px">'+rv.id+'</div>';
+    bh+='<div class="crow"><span>Valence ('+rv.dist+' nm)</span><span style="font-weight:bold;color:#1F3864">&euro;'+cv2.toFixed(2)+'/TEU</span></div>';
+    bh+='<div class="crow"><span>Barcelone ('+rb2.dist+' nm)</span><span style="font-weight:bold;color:#FF8C00">&euro;'+cb.toFixed(2)+'/TEU</span></div>';
+    bh+='<div class="crow"><span>Diff&eacute;rentiel ETS</span><span style="font-weight:bold;color:'+fc+'">'+(df>0?'+':'')+df.toFixed(2)+' &euro;/TEU &mdash; '+fl+'</span></div>';
+    bh+='</div>';
+  });
+  bh+='</div>';
+  document.getElementById('br').innerHTML=bh;
 }
 
-document.getElementById('pslider').addEventListener('input',e=>{curPrice=parseInt(e.target.value);syncEua();render()});
-document.getElementById('oslider').addEventListener('input',e=>{curOil=parseInt(e.target.value);syncOil();render()});
-document.getElementById('yrsel').addEventListener('change',e=>{curYear=e.target.value;render()});
-syncEua();syncOil();render();
+document.getElementById('ps').addEventListener('input',function(e){cP=parseInt(e.target.value);syncE();render();});
+document.getElementById('os').addEventListener('input',function(e){cO=parseInt(e.target.value);syncO();render();});
+document.getElementById('ys').addEventListener('change',function(e){cY=e.target.value;render();});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CALCULATEUR
+// ═══════════════════════════════════════════════════════════════════════════
+var routePresets = {
+  R1: {dist:522,  type:'Intra-UE', fret:1379},
+  R2: {dist:1601, type:'Intra-UE', fret:3795},
+  R3: {dist:13149,type:'Extra-UE', fret:4480},
+  R4: {dist:11078,type:'Extra-UE', fret:2939}
+};
+
+function getCalcInputs(){
+  return {
+    eua:    parseFloat(document.getElementById('c-eua').value)   || 0,
+    year:   document.getElementById('c-year').value,
+    dist:   parseFloat(document.getElementById('c-dist').value)  || 0,
+    type:   document.getElementById('c-type').value,
+    fret:   parseFloat(document.getElementById('c-fret').value)  || 1,
+    dk:     parseFloat(document.getElementById('c-dk').value)    || 908.6,
+    cap:    parseFloat(document.getElementById('c-cap').value)   || 10000,
+    lf:     parseFloat(document.getElementById('c-lf').value)    || 0.7,
+    elas:   parseFloat(document.getElementById('c-elas').value)  || -0.3,
+    traf:   parseFloat(document.getElementById('c-traf').value)  || 0,
+    trans:  parseFloat(document.getElementById('c-trans').value) || 120,
+    distf:  parseFloat(document.getElementById('c-distf').value) || 392,
+    bunker: parseFloat(document.getElementById('c-bunker').value)|| 500,
+    routeId:document.getElementById('c-route').value
+  };
+}
+
+function fmtNum(n, dec){
+  if(!isFinite(n)) return 'N/A';
+  return n.toLocaleString('fr',{minimumFractionDigits:dec,maximumFractionDigits:dec}).replace(',','.').replace('.', ',');
+}
+
+function fmtSigned(n, dec){
+  if(!isFinite(n)) return 'N/A';
+  var s = n>0?'+':(n<0?'\u2212':'');
+  var v = Math.abs(n).toLocaleString('fr',{minimumFractionDigits:dec,maximumFractionDigits:dec}).replace(/,/g,' ').replace(/\s(\d{3})$/,' $1');
+  return s + v;
+}
+
+function calc(){
+  var inp = getCalcInputs();
+  var frac = FR[inp.year][inp.type];
+
+  // Surcout ETS
+  var emis_voy = inp.dk * inp.dist / 1000;
+  var emis_ets = emis_voy * frac;
+  var cout_voy = emis_ets * inp.eua;
+  var teu_eff  = inp.cap * inp.lf;
+  var surcout  = cout_voy / teu_eff;
+  var pct_fret = surcout / inp.fret * 100;
+
+  document.getElementById('r-surcout').innerHTML =
+    fmtNum(surcout, 2) + '<span class="result-unit">&euro;/TEU</span>';
+  document.getElementById('r-surcout-detail').textContent =
+    'soit ' + pct_fret.toFixed(2) + '% du fret de r\u00e9f\u00e9rence (' + Math.round(inp.fret).toLocaleString('fr').replace(/,/g,' ') + ' \u20ac/TEU)';
+
+  document.getElementById('r-emis').innerHTML =
+    Math.round(emis_ets).toLocaleString('fr').replace(/,/g,' ') + '<span class="result-unit">tCO\u00b2</span>';
+  document.getElementById('r-cvoy').innerHTML =
+    Math.round(cout_voy).toLocaleString('fr').replace(/,/g,' ') + '<span class="result-unit">&euro;</span>';
+
+  // Impact trafic
+  var d_pct = inp.elas * pct_fret / 100;
+  var d_teu = d_pct * inp.traf;
+  var d_ann = surcout * inp.traf / 1e6;
+
+  document.getElementById('r-dteu').innerHTML =
+    fmtSigned(Math.round(d_teu), 0) + '<span class="result-unit">TEU/an</span>';
+  document.getElementById('r-dteu-pct').textContent =
+    (d_pct*100).toFixed(2) + '% du trafic de base';
+  document.getElementById('r-dann').innerHTML =
+    Math.abs(d_ann).toFixed(1) + '<span class="result-unit">M&euro;/an</span>';
+
+  // Semaphore
+  var sem = document.getElementById('r-sem');
+  var icon = sem.querySelector('.icon');
+  var txt = document.getElementById('r-sem-txt');
+  var dpct = Math.abs(d_pct * 100);
+  sem.classList.remove('green','yellow','red');
+  if(dpct < 1){
+    sem.classList.add('green');
+    icon.innerHTML = '&#9989;';
+    txt.textContent = 'Risque faible : impact inf\u00e9rieur \u00e0 1% du trafic de base';
+  } else if(dpct < 3){
+    sem.classList.add('yellow');
+    icon.innerHTML = '&#9888;';
+    txt.textContent = 'Risque mod\u00e9r\u00e9 : impact entre 1% et 3% du trafic';
+  } else {
+    sem.classList.add('red');
+    icon.innerHTML = '&#128308;';
+    txt.textContent = 'Risque \u00e9lev\u00e9 : impact sup\u00e9rieur \u00e0 3% du trafic';
+  }
+
+  // Reroutage Tanger Med
+  if(inp.dist > inp.distf){
+    var bunker_f = (inp.dk / 1000 / EF) * inp.distf * inp.bunker / (inp.cap * inp.lf);
+    var ets_evite = inp.dk * (inp.dist - inp.distf) / 1000 * frac * inp.eua / (inp.cap * inp.lf);
+    var inc_net = ets_evite - inp.trans - bunker_f;
+    var denom = inp.dk * (inp.dist - inp.distf) * frac / (1000 * inp.cap * inp.lf);
+    var seuil = denom > 0 ? (inp.trans + bunker_f) / denom : Infinity;
+
+    document.getElementById('r-incit').innerHTML =
+      fmtSigned(inc_net, 1) + '<span class="result-unit">&euro;/TEU</span>';
+    document.getElementById('r-seuil').innerHTML =
+      Math.round(seuil).toLocaleString('fr').replace(/,/g,' ') + '<span class="result-unit">&euro;/tCO\u00b2</span>';
+
+    var card = document.getElementById('r-incit-card');
+    var msg = document.getElementById('r-incit-msg');
+    card.classList.remove('danger','safe');
+    if(inc_net > 0){
+      card.classList.add('danger');
+      msg.textContent = '> 0 : reroutage financierement attractif';
+    } else {
+      card.classList.add('safe');
+      msg.textContent = '< 0 : pas d\'incitation au reroutage';
+    }
+  } else {
+    document.getElementById('r-incit').innerHTML = 'N/A<span class="result-unit"></span>';
+    document.getElementById('r-seuil').innerHTML = 'N/A<span class="result-unit"></span>';
+    document.getElementById('r-incit-msg').textContent = 'Distance trop courte pour un reroutage';
+  }
+
+  // Differentiel Valencia-Barcelona (uniquement intra-UE)
+  var bcnSection = document.getElementById('r-bcn-section');
+  var bcnRoutes = {
+    R1: {distVal:522,  distBcn:450,  fret:1379, label:'G\u00eanes'},
+    R2: {distVal:1601, distBcn:1550, fret:3795, label:'Le Havre'}
+  };
+  if(inp.type === 'Intra-UE' && bcnRoutes[inp.routeId]){
+    bcnSection.style.display = 'block';
+    var br = bcnRoutes[inp.routeId];
+    var sVal = inp.dk * br.distVal / 1000 * inp.eua * frac / (inp.cap * inp.lf);
+    var sBcn = inp.dk * br.distBcn / 1000 * inp.eua * frac / (inp.cap * inp.lf);
+    var diff = sVal - sBcn;
+
+    document.getElementById('r-bcn-val').innerHTML =
+      fmtNum(sVal, 2) + '<span class="result-unit">&euro;/TEU</span>';
+    document.getElementById('r-bcn-bcn').innerHTML =
+      fmtNum(sBcn, 2) + '<span class="result-unit">&euro;/TEU</span>';
+    document.getElementById('r-bcn-diff').innerHTML =
+      (diff>=0?'+':'') + fmtNum(diff, 2) + '<span class="result-unit">&euro;/TEU</span>';
+
+    var bcnCard = document.getElementById('r-bcn-diff-card');
+    var bcnMsg = document.getElementById('r-bcn-diff-msg');
+    bcnCard.classList.remove('danger','warn','safe');
+    if(diff > 0.5){
+      bcnCard.classList.add('warn');
+      bcnMsg.textContent = 'Barcelone significativement avantag\u00e9e par rapport a Valence sur cette route.';
+    } else if(diff > 0.1){
+      bcnCard.classList.add('warn');
+      bcnMsg.textContent = 'Barcelone l\u00e9g\u00e8rement avantag\u00e9e en raison de sa distance plus courte vers ' + br.label + '.';
+    } else if(diff < -0.1){
+      bcnCard.classList.add('safe');
+      bcnMsg.textContent = 'Valence l\u00e9g\u00e8rement avantag\u00e9e dans cette configuration.';
+    } else {
+      bcnMsg.textContent = 'Diff\u00e9rentiel n\u00e9gligeable entre les deux ports sur cette route.';
+    }
+  } else {
+    bcnSection.style.display = 'none';
+  }
+}
+
+function setEUA(v){
+  document.getElementById('c-eua').value = v;
+  var btns = document.querySelectorAll('#tab-calc .preset-btn');
+  for(var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+  var m = {40:0, 65:1, 80:2, 100:3, 150:4};
+  if(m[v] !== undefined) btns[m[v]].classList.add('active');
+  calc();
+}
+
+function tglAdv(el){
+  el.classList.toggle('open');
+  document.getElementById('adv').classList.toggle('open');
+}
+
+document.getElementById('c-route').addEventListener('change', function(e){
+  var k = e.target.value;
+  if(k !== 'custom' && routePresets[k]){
+    var r = routePresets[k];
+    document.getElementById('c-dist').value = r.dist;
+    document.getElementById('c-type').value = r.type;
+    document.getElementById('c-fret').value = r.fret;
+  }
+  calc();
+});
+
+['c-eua','c-year','c-dist','c-type','c-fret','c-dk','c-cap','c-lf','c-elas','c-traf','c-trans','c-distf','c-bunker'].forEach(function(id){
+  var el = document.getElementById(id);
+  if(el) el.addEventListener('input', calc);
+  if(el && el.tagName === 'SELECT') el.addEventListener('change', calc);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TABS & LANGUAGE
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(id){
+  var tabs = document.querySelectorAll('.tab');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
+  event.currentTarget.classList.add('active');
+
+  var contents = document.querySelectorAll('.tab-content');
+  for(var i=0;i<contents.length;i++) contents[i].classList.remove('active');
+  document.getElementById('tab-'+id).classList.add('active');
+
+  if(id === 'map'){
+    setTimeout(function(){map.invalidateSize();}, 100);
+  }
+}
+
+function tglLang(e){
+  e.stopPropagation();
+  document.getElementById('lang-pop').classList.toggle('show');
+}
+
+document.addEventListener('click', function(e){
+  var pop = document.getElementById('lang-pop');
+  if(pop && !pop.contains(e.target) && !e.target.closest('.lang-btn')){
+    pop.classList.remove('show');
+  }
+});
+
+// Initialize
+syncE();
+syncO();
+render();
+calc();
 </script>
 </body>
 </html>
