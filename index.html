@@ -112,8 +112,10 @@ select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
 .danger{background:#fce4ec;color:#c62828;border:1px solid #ef9a9a}
 .bc{background:#fff;border:1px solid #ffe082;border-radius:5px;padding:9px 11px;margin-bottom:6px}
 .bc h4{font-size:11px;color:#7a5000;margin-bottom:7px;font-weight:bold}
-#da{display:none;background:#d84000;color:#fff;text-align:center;padding:5px 12px;font-size:11px;font-weight:bold;flex-shrink:0}
+#da{display:none;position:absolute;top:0;left:0;right:0;background:#d84000;color:#fff;text-align:center;padding:5px 12px;font-size:11px;font-weight:bold;z-index:1100}
 #da.on{display:block}
+#da-calc{display:none;background:#d84000;color:#fff;text-align:center;padding:8px 16px;font-size:12px;font-weight:bold;border-radius:6px;margin-bottom:16px}
+#da-calc.on{display:block}
 .leg{display:flex;flex-wrap:wrap;gap:7px}
 .li{display:flex;align-items:center;gap:5px;font-size:10px;color:#3a5a7a}
 .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
@@ -238,18 +240,17 @@ select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
 </header>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('map')"><span class="tab-icon">&#127757;</span>Carte interactive</button>
-  <button class="tab" onclick="switchTab('calc')"><span class="tab-icon">&#9881;</span>Calculateur</button>
+  <button class="tab active" onclick="switchTab('calc')"><span class="tab-icon">&#9881;</span>Calculateur</button>
+  <button class="tab" onclick="switchTab('map')"><span class="tab-icon">&#127757;</span>Carte interactive</button>
 </div>
-
-<div id="da">&#9888; REROUTAGE ACTIF : le surc&ucirc;t ETS d&eacute;passe le co&ucirc;t total du d&eacute;tour</div>
 
 <div class="main">
 
   <!-- ═══════════════════════════════════════════════════════════════════
        TAB 1 : CARTE INTERACTIVE
        ═══════════════════════════════════════════════════════════════════ -->
-  <div class="tab-content active" id="tab-map">
+  <div class="tab-content" id="tab-map">
+    <div id="da">&#9888; REROUTAGE ACTIF : le surc&ucirc;t ETS d&eacute;passe le co&ucirc;t total du d&eacute;tour</div>
     <div id="map"></div>
     <button id="tbtn" onclick="tglPanel()">&#9664;</button>
     <div class="panel" id="panel">
@@ -297,7 +298,7 @@ select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
       </div>
 
       <div class="asec">
-        <div class="ahdr h-bcn" onclick="tglAcc(this)"><span>Comp&eacute;tition intra-UE : Valence vs. Barcelone</span><span class="ch">&#9660;</span></div>
+        <div class="ahdr h-bcn" onclick="tglAcc(this)"><span>Comp&eacute;tition intra-UE : effet ETS Valence-Barcelone</span><span class="ch">&#9660;</span></div>
         <div class="abody closed"><div id="br"></div></div>
       </div>
 
@@ -327,7 +328,7 @@ select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
   <!-- ═══════════════════════════════════════════════════════════════════
        TAB 2 : CALCULATEUR
        ═══════════════════════════════════════════════════════════════════ -->
-  <div class="tab-content" id="tab-calc">
+  <div class="tab-content active" id="tab-calc">
     <div class="calc-wrap">
       <div class="calc-container">
 
@@ -335,6 +336,8 @@ select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
           <h2>&#9881; Calculateur de surco&ucirc;t EU ETS</h2>
           <p>Estimez le surco&ucirc;t EU ETS pour une route donn&eacute;e en modifiant le prix EUA, l'ann&eacute;e et la route. Activez le mode avanc&eacute; pour ajuster tous les param&egrave;tres du mod&egrave;le.</p>
         </div>
+
+        <div id="da-calc">&#9888; REROUTAGE ACTIF : le surco&ucirc;t ETS d&eacute;passe le co&ucirc;t total du d&eacute;tour</div>
 
         <div class="calc-grid">
 
@@ -589,7 +592,7 @@ select{width:100%;background:#fff;color:#1a2840;border:1px solid #9ab8d4;
             </div>
 
             <div id="r-bcn-section" style="display:none">
-              <div class="section-title" style="margin-top:24px">Diff&eacute;rentiel intra-UE Valence vs. Barcelone</div>
+              <div class="section-title" style="margin-top:24px">Comparaison intra-UE Valence vs. Barcelone</div>
 
               <div class="result-grid">
                 <div class="result-card">
@@ -642,7 +645,7 @@ var RT=[
 ];
 var BR=[
   {id:'R1',nm:'Barcelone - G\u00eanes',  dist:450, tp:'Intra-UE',fr:1379},
-  {id:'R2',nm:'Barcelone - Le Havre',    dist:1550,tp:'Intra-UE',fr:3795}
+  {id:'R2',nm:'Barcelone - Le Havre',    dist:1670,tp:'Intra-UE',fr:3795}
 ];
 var CC=[{id:'TM',nm:'Tanger Med',df:392,tc:120,ll:[35.88,-5.50]}];
 
@@ -845,8 +848,8 @@ function render(){
   document.getElementById('cr').innerHTML=ch;
 
   var intraRoutes=RT.filter(function(r){return r.tp==='Intra-UE';});
-  var bh='<div class="bc"><h4>&#9888; Valence vs. Barcelone &mdash; diff&eacute;rentiel surc&ucirc;t ETS</h4>';
-  bh+='<p style="font-size:9px;color:#7a6000;margin-bottom:8px;line-height:1.5">Barcelone est l&eacute;g&egrave;rement plus proche de G&ecirc;nes (~450 nm) et Le Havre (~1 550 nm) que Valence. Le diff&eacute;rentiel s\'accumule sur des milliers de TEU/an.</p>';
+  var bh='<div class="bc"><h4>&#10003; Valence vs. Barcelone &mdash; effet ETS structurellement neutre</h4>';
+  bh+='<p style="font-size:9px;color:#7a6000;margin-bottom:8px;line-height:1.5">Les deux ports sont soumis a 100% de couverture ETS sur les voyages intra-UE. Les ecarts de distance varient selon la destination et se compensent partiellement. Les differentiels qui apparaissent ci-dessous sont marginaux et ne modifient pas la position relative des deux ports.</p>';
   intraRoutes.forEach(function(rv){
     var rb2=null;
     for(var bi2=0;bi2<BR.length;bi2++){if(BR[bi2].id===rv.id){rb2=BR[bi2];break;}}
@@ -854,13 +857,13 @@ function render(){
     var cv2=sc(rv.dist,rv.tp,p,y);
     var cb=sc(rb2.dist,rb2.tp,p,y);
     var df=cv2-cb;
-    var fc=df>0.2?'#c62828':df<-0.2?'#2e7d32':'#888';
-    var fl=df>0.2?'Barcelone avantagee':df<-0.2?'Valence avantagee':'Parite';
+    var fc='#666';
+    var fl=df>0.05?'Barcelone leg. avantagee':df<-0.05?'Valence leg. avantagee':'Parite';
     bh+='<div style="margin-bottom:8px;padding:6px 0;border-bottom:1px solid #ffe082">';
     bh+='<div style="font-size:10px;font-weight:bold;color:#7a5000;margin-bottom:4px">'+rv.id+'</div>';
     bh+='<div class="crow"><span>Valence ('+rv.dist+' nm)</span><span style="font-weight:bold;color:#1F3864">&euro;'+cv2.toFixed(2)+'/TEU</span></div>';
     bh+='<div class="crow"><span>Barcelone ('+rb2.dist+' nm)</span><span style="font-weight:bold;color:#FF8C00">&euro;'+cb.toFixed(2)+'/TEU</span></div>';
-    bh+='<div class="crow"><span>Diff&eacute;rentiel ETS</span><span style="font-weight:bold;color:'+fc+'">'+(df>0?'+':'')+df.toFixed(2)+' &euro;/TEU &mdash; '+fl+'</span></div>';
+    bh+='<div class="crow"><span>Ecart</span><span style="font-weight:bold;color:'+fc+'">'+(df>0?'+':'')+df.toFixed(2)+' &euro;/TEU &middot; '+fl+'</span></div>';
     bh+='</div>';
   });
   bh+='</div>';
@@ -985,21 +988,24 @@ function calc(){
     if(inc_net > 0){
       card.classList.add('danger');
       msg.textContent = '> 0 : reroutage financierement attractif';
+      document.getElementById('da-calc').classList.add('on');
     } else {
       card.classList.add('safe');
       msg.textContent = '< 0 : pas d\'incitation au reroutage';
+      document.getElementById('da-calc').classList.remove('on');
     }
   } else {
     document.getElementById('r-incit').innerHTML = 'N/A<span class="result-unit"></span>';
     document.getElementById('r-seuil').innerHTML = 'N/A<span class="result-unit"></span>';
     document.getElementById('r-incit-msg').textContent = 'Distance trop courte pour un reroutage';
+    document.getElementById('da-calc').classList.remove('on');
   }
 
   // Differentiel Valencia-Barcelona (uniquement intra-UE)
   var bcnSection = document.getElementById('r-bcn-section');
   var bcnRoutes = {
     R1: {distVal:522,  distBcn:450,  fret:1379, label:'G\u00eanes'},
-    R2: {distVal:1601, distBcn:1550, fret:3795, label:'Le Havre'}
+    R2: {distVal:1601, distBcn:1670, fret:3795, label:'Le Havre'}
   };
   if(inp.type === 'Intra-UE' && bcnRoutes[inp.routeId]){
     bcnSection.style.display = 'block';
@@ -1018,17 +1024,14 @@ function calc(){
     var bcnCard = document.getElementById('r-bcn-diff-card');
     var bcnMsg = document.getElementById('r-bcn-diff-msg');
     bcnCard.classList.remove('danger','warn','safe');
-    if(diff > 0.5){
+    if(Math.abs(diff) < 0.05){
+      bcnMsg.textContent = 'Effet ETS quasi-neutre entre les deux ports sur cette route.';
+    } else if(diff > 0){
       bcnCard.classList.add('warn');
-      bcnMsg.textContent = 'Barcelone significativement avantag\u00e9e par rapport a Valence sur cette route.';
-    } else if(diff > 0.1){
-      bcnCard.classList.add('warn');
-      bcnMsg.textContent = 'Barcelone l\u00e9g\u00e8rement avantag\u00e9e en raison de sa distance plus courte vers ' + br.label + '.';
-    } else if(diff < -0.1){
-      bcnCard.classList.add('safe');
-      bcnMsg.textContent = 'Valence l\u00e9g\u00e8rement avantag\u00e9e dans cette configuration.';
+      bcnMsg.textContent = 'Barcelone l\u00e9g\u00e8rement avantag\u00e9e (' + fmtNum(diff, 2) + ' \u20ac/TEU) en raison de sa distance plus courte vers ' + br.label + '. Diff\u00e9rentiel marginal qui ne modifie pas la position relative des ports.';
     } else {
-      bcnMsg.textContent = 'Diff\u00e9rentiel n\u00e9gligeable entre les deux ports sur cette route.';
+      bcnCard.classList.add('safe');
+      bcnMsg.textContent = 'Valence l\u00e9g\u00e8rement avantag\u00e9e (' + fmtNum(Math.abs(diff), 2) + ' \u20ac/TEU) car la route Barcelone-' + br.label + ' passe par Gibraltar avec un troncon m\u00e9diterran\u00e9en plus long. Diff\u00e9rentiel marginal qui ne modifie pas la position relative des ports.';
     }
   } else {
     bcnSection.style.display = 'none';
